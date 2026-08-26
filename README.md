@@ -256,6 +256,9 @@ tek tek `masaustu/ENVANTER.md` sonundaki tabloda.
 | `uret-yardim.sh` | Widget yardım panelinin içeriği |
 | `masaustu/` | KWin, tema, panel, SDDM scriptleri |
 | `masaustu/ENVANTER.md` | **Tam envanter** — her özelleştirme, nerede durduğu, depoda olup olmadığı |
+| `payload/tr-f_custom.xkb` | Üretilmiş XKB bloğu (kaynak değil çıktı; `uret-f_custom.sh` yeniden üretir) |
+| `payload/plasmoid/org.kaan.qftoggle/` | Widget: `metadata.json`, `main.qml` (rozet), `Yardim.qml` (sağ tık paneli) |
+| `payload/VSCode.keytab` | SIGINT katman 2 — yalnız `--keytab` ile kurulur, normalde gerekmez |
 
 ---
 
