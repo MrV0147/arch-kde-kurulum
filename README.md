@@ -146,18 +146,36 @@ pasif aksiyon tuşu yutmaz, `Ctrl+C` terminale geçer. Yani normal kullanımda
 (terminal çıktısı düzenlenebilir değil), yani `Ctrl+X` terminale geçer ve
 nano'dan çıkış çalışmaya devam eder. `Ctrl+Z` de SIGTSTP olarak kalır.
 
-Konsole 26.08 `konsoleui.rc`'yi diske koymadığı için aksiyon adları **tahmin
-edilmiyor**. Konsole'da bir kez *Şemaları Yönet → Yeni Şema* diyorsun; Konsole
-`konsoleui.rc` + `sessionui.rc` dosyalarını gerçek aksiyon adlarıyla yazıyor ve
-her ikisine boş bir `<ActionProperties scheme="VSCode"/>` koyuyor. Script o
-bloğu dolduruyor ve **yazmadan önce her aksiyon adının gerçekten o dosyada
-olduğunu doğruluyor** — çünkü `KXMLGUIFactory` her istemcinin
-`ActionProperties`'ini yalnızca kendi aksiyonlarına uygular; yanlış dosyaya
-yazarsan hata da vermez, sessizce hiçbir şey olmaz.
+**Aksiyon adları tahmin edilmiyor, iki dosya iki ayrı iş yapıyor.** Konsole 26.08
+menü tanımını Qt kaynağına gömüyor. Bir kez *Şemaları Yönet → Yeni Şema*
+dediğinde `konsoleui.rc` + `sessionui.rc` dosyalarını **gerçek aksiyon adlarıyla**
+yazıyor — script adları oradan doğruluyor. Ama kısayollar oraya yazılmıyor:
 
-Doğrulama: `bash test-konsole.sh` — 10 otomatik ölçüm, ardından SIGINT ve
+```
+~/.local/share/kxmlgui5/konsole/{konsoleui,sessionui}.rc   ← aksiyon adları (oku)
+~/.local/share/konsole/shortcuts/VSCode                    ← kısayollar (yaz)
+konsolerc → [Shortcut Schemes] Current Scheme=VSCode       ← şemayı etkinleştir
+```
+
+`KShortcutSchemesHelper` şemayı `QStandardPaths::AppDataLocation` altında
+`shortcuts/<ad>` yolunda arıyor. Bir tur `ui.rc` dosyalarına yazdık — **hata bile
+vermedi, sessizce hiçbir şey olmadı.**
+
+> **Ayırıcı tuzağı:** Bir aksiyona iki kısayol verirken ayırıcı `"; "` —
+> noktalı virgül **artı boşluk**. Boşluksuz yazarsan Qt tüm dizgeyi tek
+> kombinasyon sanıp ayrıştıramaz ve aksiyona **boş** kısayol verir, sessizce.
+> Ölçüldü: `"Ctrl+C;Ctrl+Ins"` → `['']`, `"Ctrl+C; Ctrl+Ins"` → 2 adet.
+> Script kısayolları liste olarak tutup ayırıcıyı tek yerde uyguluyor;
+> `test-konsole.sh` de dizgeleri Qt'ye ayrıştırtıp boş çıkanı yakalıyor.
+
+**Kısayollar düzene bağlıdır.** Bir kısayol "şu fiziksel tuş" değil, "`c` harfini
+üreten tuş" demektir — F düzenine geçince `C` ile `V` yer değiştirir. Bu yüzden
+`Ctrl+Insert` / `Shift+Insert` de bağlı: `Insert` harf tuşu olmadığı için hiçbir
+düzende taşınmaz. Ayrıntı: `KISAYOLLAR.md`.
+
+Doğrulama: `bash test-konsole.sh` — 11 otomatik ölçüm, ardından SIGINT ve
 kopyalama için yönlendirmeli testler (sonucu senin "çalıştı galiba" demene
-bırakmadan, çıkış kodundan ve Klipper'dan okuyor).
+bırakmadan, `sleep`'in çıkış kodundan ve Klipper'dan okuyor).
 
 ### 4 — Q/F panel widget'ı
 
