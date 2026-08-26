@@ -39,7 +39,14 @@ else
 fi
 
 # --- 2) KWin canli keymap'i f_custom iceriyor mu -------------------------
-CANLI="$(WAYLAND_DEBUG=1 timeout 5 xkbcli interactive-wayland --verbose 2>&1 || true)"
+# Iki deneme: ilk baglanti bazen zaman asimina ugruyor (olculdu - kullanicida
+# iki kez "okunamadi" cikti, kalinti surec temizlenince duzeldi).
+CANLI=""
+for _d in 1 2; do
+  CANLI="$(WAYLAND_DEBUG=1 timeout 6 xkbcli interactive-wayland --verbose 2>&1 || true)"
+  grep -q 'Compiling xkb_symbols' <<<"$CANLI" && break
+  sleep 1
+done
 # timeout ile oldurulen xkbcli bazen artakaliyor ve SONRAKI calistirmada
 # Wayland baglantisini bozuyor (olculdu: kullanici Ctrl+C'leyince kalan
 # surec yuzunden "canli keymap okunamadi" hatasi alindi). Temizle.
@@ -93,21 +100,25 @@ echo
 echo "SONUC (otomatik): $gecti gecti, $kaldi kaldi"
 
 # ------------------------------------------------------------------------
-# CANLI TUS OLCUMU — asil kanit, DOGRUDAN TERMINALDE
+# CANLI TUS OLCUMU — asil kanit, dogrudan bu terminalde
 #
-# Onceki surum ayri bir pencere (xkbcli interactive-wayland) actiriyordu:
-# kullanicinin pencereye tiklamasi gerekiyordu, Ctrl+C scripti olduruyordu ve
-# artik kalan surec sonraki calistirmayi bozuyordu. Uc ayri kirilma noktasi.
+# TUS SECIMI ONEMLI, iki tur denendi:
 #
-# Bunun yerine bayti DOGRUDAN bu terminalde olcuyoruz. Puf nokta: stty -isig.
-# Normalde 0x03 (Ctrl+C) cekirdek tarafindan SIGINT'e cevrilir ve script oldur;
-# -isig bunu kapatinca 0x03 sira bir bayt olarak read'e duser.
+#   1. Ctrl+C ile olcmeye calistik. Kotu fikir: 0x03 SIGINT uretiyor, script
+#      oluyordu. "stty -isig" ile sinyali kapatmayi denedik, o da terminali
+#      bozdu - scriptin KENDI CIKTISI girdi olarak okundu (olculen baytlar
+#      0x20 ve 0x53 cikti: kendi metnimizin bosluk ve 'S' harfi).
+#   2. SIGINT'i tuzaga almayi denedik. Islemedi: bash tuzagi bloke bir
+#      builtin bitene kadar calistirmiyor, read sonsuza kadar bekledi.
 #
-#   Ctrl+C  -> 0x03      Ctrl+V  -> 0x16
+# COZUM: sinyal URETMEYEN bir tus cifti secmek. Q'nun A tusu tam da bu:
 #
-# F duzeninde Q'nun C tusuna Ctrl ile basildiginda:
-#   0x03 gelirse -> Ctrl seviyesi CALISIYOR (tus Q konumunda kaldi)
-#   0x16 gelirse -> calismiyor (tus F harfini uretti)
+#   Q duzeni       : AC01 -> 'a'  ->  Ctrl+A = 0x01
+#   f_custom (F)   : AC01 -> 'u'  yazarken,  Ctrl ile 'a'  ->  0x01
+#   duzeltme yoksa : Ctrl ile 'u' -> 0x15
+#
+# 0x01 de 0x15 de terminal sinyali degil. Ne stty'ye dokunmak gerekiyor ne
+# tuzaga; bash'in kendi "read -rsn1"i ham bayti okuyor.
 # ------------------------------------------------------------------------
 
 if [[ ! -t 0 ]]; then
@@ -119,26 +130,24 @@ if [[ ! -t 0 ]]; then
   exit $(( kaldi > 0 ))
 fi
 
-STTY_ESKI="$(stty -g)"
-geri_al() { stty "$STTY_ESKI" 2>/dev/null; }
-trap 'geri_al; echo; echo "(iptal edildi)"; exit 130' INT
-trap geri_al EXIT
-
-# Tek bayt okur; -isig kapali oldugu icin Ctrl+C bile sinyal degil bayt olarak gelir
 olc_bayt() {
-  local c
-  stty -isig -icanon -echo min 1 time 0
-  IFS= read -rsn1 c
-  stty "$STTY_ESKI"
-  printf '%02x' "'$c" 2>/dev/null
+  local c rc
+  IFS= read -rsn1 c; rc=$?
+  if (( rc != 0 )) || [[ -z "$c" ]]; then
+    BAYT=yok
+  else
+    BAYT="$(printf '%02x' "'$c" 2>/dev/null)"
+  fi
 }
 
 ad_bayt() {
   case "$1" in
-    03) echo "0x03  Ctrl+C" ;;
-    16) echo "0x16  Ctrl+V" ;;
+    01)  echo "0x01  Ctrl+A" ;;
+    15)  echo "0x15  Ctrl+U" ;;
+    03)  echo "0x03  Ctrl+C" ;;
     0d|0a) echo "Enter" ;;
-    *) echo "0x$1" ;;
+    yok) echo "(bayt gelmedi)" ;;
+    *)   echo "0x$1" ;;
   esac
 }
 
@@ -147,48 +156,53 @@ cat <<'EOF'
 ===========================================================================
 CANLI TUS OLCUMU  (asil kanit)
 
-Ayri pencere yok, tiklama yok. Tusa BU terminalde basacaksin.
-Ctrl+C bu olcum sirasinda scripti OLDURMEZ - bayt olarak okunur.
+Ayri pencere yok, tiklama yok - tusa BU terminalde basacaksin.
+
+Olcum tusu:  Ctrl + uzerinde  A  YAZAN tus
+(Ctrl+C degil: o SIGINT uretip olcumu bozuyor. A tusu ayni seyi
+ sinyal uretmeden olcuyor - Q'da 'a', F'de duzeltme varsa yine 'a'.)
 ===========================================================================
 EOF
 
 # --- A) Q duzeninde kontrol olcumu ---------------------------------------
 echo
 echo "A) Once Q duzeninde (kontrol olcumu)"
-echo "   Panel dugmesi  Q  gostersin. Sonra Ctrl basili tutup C tusuna bas."
+echo "   Panel dugmesi  Q  gostersin, sonra:  Ctrl + A"
 read -r -p "   Hazirsan Enter... " _ || true
 printf "   basiliyor: "
-B="$(olc_bayt)"
+olc_bayt; B="$BAYT"
 echo "$(ad_bayt "$B")"
-if [[ "$B" == "03" ]]; then
-  ok "Q duzeni: Ctrl+C -> 0x03  (beklenen)"
+if [[ "$B" == "01" ]]; then
+  ok "Q duzeni: Ctrl+A -> 0x01  (beklenen)"
 else
-  hata "Q duzeni: 0x03 bekleniyordu, $(ad_bayt "$B") geldi"
+  hata "Q duzeni: 0x01 bekleniyordu, $(ad_bayt "$B") geldi"
+  echo "         Yanlis tusa basmis olabilirsin (Ctrl basili + A tusu)."
 fi
 
 # --- B) F duzeninde asil olcum -------------------------------------------
 echo
 echo "B) Simdi F duzenine gec (panel dugmesine tikla)"
-echo "   Sonra yine Ctrl basili tutup, uzerinde  C  YAZAN tusa bas."
+echo "   Sonra yine:  Ctrl + uzerinde A YAZAN tus"
 read -r -p "   F duzenine gectiysen Enter... " _ || true
 printf "   basiliyor: "
-B="$(olc_bayt)"
+olc_bayt; B="$BAYT"
 echo "$(ad_bayt "$B")"
 echo
-if [[ "$B" == "03" ]]; then
-  ok "F duzeni: Ctrl+C -> 0x03  ->  CTRL SEVIYESI CALISIYOR"
-  echo "         Kisayollar iki duzende de ayni fiziksel tusta."
-elif [[ "$B" == "16" ]]; then
-  hata "F duzeni: 0x16 (Ctrl+V) geldi -> Ctrl seviyesi DEVREDE DEGIL"
+if [[ "$B" == "01" ]]; then
+  ok "F duzeni: Ctrl+A -> 0x01  ->  CTRL SEVIYESI CALISIYOR"
+  echo "         Butun Ctrl+<harf> kisayollari iki duzende de ayni"
+  echo "         fiziksel tusta. Ctrl+C de dahil."
+elif [[ "$B" == "15" ]]; then
+  hata "F duzeni: 0x15 (Ctrl+U) geldi -> Ctrl seviyesi DEVREDE DEGIL"
   echo "         KWin hala eski keymap'i kullaniyor. Sirasiyla:"
   echo "           bash $KOK/yenile-keymap.sh"
   echo "           bu testi tekrar calistir"
   echo "         Yine olmazsa oturumu kapatip ac."
 else
-  bilgi "beklenen 0x03/0x16 disinda: $(ad_bayt "$B") - yanlis tusa basmis olabilirsin"
+  bilgi "beklenen 0x01/0x15 disinda: $(ad_bayt "$B")"
+  echo "         Ctrl'u basili tutup A tusuna bastigindan emin ol."
 fi
 
-geri_al
 echo
 echo "TOPLAM: $gecti gecti, $kaldi kaldi"
 exit $(( kaldi > 0 ))
