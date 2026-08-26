@@ -120,8 +120,17 @@ pasif aksiyon tuşu yutmaz, `Ctrl+C` terminale geçer. Yani normal kullanımda
 nano'dan çıkış çalışmaya devam eder. `Ctrl+Z` de SIGTSTP olarak kalır.
 
 Konsole 26.08 `konsoleui.rc`'yi diske koymadığı için aksiyon adları **tahmin
-edilmiyor**: Konsole'a şemayı bir kez kendisine yazdırıyorsun, script sonra
-o dosyadaki gerçek adları **mevcut varsayılan kısayollarından tanıyıp** düzenliyor.
+edilmiyor**. Konsole'da bir kez *Şemaları Yönet → Yeni Şema* diyorsun; Konsole
+`konsoleui.rc` + `sessionui.rc` dosyalarını gerçek aksiyon adlarıyla yazıyor ve
+her ikisine boş bir `<ActionProperties scheme="VSCode"/>` koyuyor. Script o
+bloğu dolduruyor ve **yazmadan önce her aksiyon adının gerçekten o dosyada
+olduğunu doğruluyor** — çünkü `KXMLGUIFactory` her istemcinin
+`ActionProperties`'ini yalnızca kendi aksiyonlarına uygular; yanlış dosyaya
+yazarsan hata da vermez, sessizce hiçbir şey olmaz.
+
+Doğrulama: `bash test-konsole.sh` — 10 otomatik ölçüm, ardından SIGINT ve
+kopyalama için yönlendirmeli testler (sonucu senin "çalıştı galiba" demene
+bırakmadan, çıkış kodundan ve Klipper'dan okuyor).
 
 ### 4 — Q/F panel widget'ı
 

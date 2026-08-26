@@ -77,22 +77,39 @@ yerleşiyor. Böylece 32 harfin hepsi tam, hiçbir Q sembolü kaybolmuyor.
 
 ## ② Konsole (terminal) kısayolları
 
-| Tuş | Ne yapar | Nerede geçerli | Nerede tanımlı | Eskiden neydi / ne kaybettim |
+| Tuş | Ne yapar | Aksiyon adı | Nerede tanımlı | Eskiden neydi / ne kaybettim |
 |---|---|---|---|---|
-| `Ctrl+C` | **Kopyala** | Konsole | `VSCode.shortcuts` | Eskiden `Ctrl+Shift+C`. Seçim yokken tuş terminale geçer → **`Ctrl+C` hâlâ işlemi durdurur** |
-| `Ctrl+Shift+C` | **SIGINT** (işlemi durdur) | Konsole | keytab (katman 2) | Eskiden Kopyala'ydı |
-| `Ctrl+V` | Yapıştır | Konsole | `VSCode.shortcuts` | Eskiden `Ctrl+Shift+V` |
-| `Ctrl+Shift+V` | Yapıştır (ikinci) | Konsole | `VSCode.shortcuts` | Değişmedi, eski alışkanlık korundu |
-| `Ctrl+F` | Bul | Konsole | `VSCode.shortcuts` | Eskiden `Ctrl+Shift+F`. **Kayıp:** readline `C-f` (ileri karakter) → yerine **`→` tuşu** |
-| `Ctrl+T` | Yeni sekme | Konsole | `VSCode.shortcuts` | Eskiden `Ctrl+Shift+T`. Kayıp: readline `C-t` (harf takası) — pratikte kullanılmaz |
-| `Ctrl+W` | Sekmeyi kapat | Konsole | `VSCode.shortcuts` | Eskiden `Ctrl+Shift+W`. **Kayıp: `C-w` = önceki kelimeyi sil → yerine `Alt+Backspace`** |
-| `Ctrl+Tab` | Sonraki sekme | Konsole | `VSCode.shortcuts` | Eskiden `Shift+Sağ` (o da duruyor) |
-| `Ctrl+Shift+Tab` | Önceki sekme | Konsole | `VSCode.shortcuts` | Eskiden `Shift+Sol` (o da duruyor) |
+| `Ctrl+C` | **Kopyala** | `edit_copy` | `sessionui.rc` | Eskiden `Ctrl+Shift+C`. Seçim yokken tuş terminale geçer → **`Ctrl+C` hâlâ işlemi durdurur** |
+| `Ctrl+Shift+C` | **SIGINT** (işlemi durdur) | — | keytab (katman 2, isteğe bağlı) | Eskiden Kopyala'ydı |
+| `Ctrl+V` | Yapıştır | `edit_paste` | `sessionui.rc` | Eskiden `Ctrl+Shift+V` |
+| `Ctrl+Shift+V` | Yapıştır (ikinci) | `edit_paste` | `sessionui.rc` | Değişmedi, eski alışkanlık korundu |
+| `Ctrl+F` | Bul | `edit_find` | `sessionui.rc` | Eskiden `Ctrl+Shift+F`. **Kayıp:** readline `C-f` (ileri karakter) → yerine **`→` tuşu** |
+| `F3` | Sonrakini bul | `edit_find_next` | `sessionui.rc` | Eskiden `Ctrl+Shift+F3` |
+| `Shift+F3` | Öncekini bul | `edit_find_prev` | `sessionui.rc` | — |
+| `Ctrl+T` | Yeni sekme | `new-tab` | `konsoleui.rc` | Eskiden `Ctrl+Shift+T`. Kayıp: readline `C-t` (harf takası) — pratikte kullanılmaz |
+| `Ctrl+W` | Sekmeyi kapat | `close-session` | `sessionui.rc` | Eskiden `Ctrl+Shift+W`. **Kayıp: `C-w` = önceki kelimeyi sil → yerine `Alt+Backspace`** |
+
+**Sekme geçişi `Shift+Sağ` / `Shift+Sol` olarak kaldı.** `Ctrl+Tab` atanmadı:
+sekme gezinme aksiyonları (`next-view`/`previous-view`) hiçbir menüde yer
+almadığı için Konsole'un yazdığı `ui.rc` dosyalarında da görünmüyorlar. Adlarını
+tahmin etmek yerine dokunmadım — istersen Konsole'un kendi kısayol penceresinden
+elle atayabilirsin.
 
 **Dosyalar:**
-`~/.local/share/kxmlgui5/konsole/VSCode.shortcuts` ·
+`~/.local/share/kxmlgui5/konsole/sessionui.rc` ve `konsoleui.rc`
+(her ikisinde `<ActionProperties scheme="VSCode">` bloğu) ·
 `~/.config/konsolerc` → `[Shortcut Schemes] Current Scheme=VSCode` ·
 `~/.local/share/konsole/VSCode.keytab` (varsa)
+
+> **Mekanizma notu:** Konsole 26.08, "Yeni Şema" dediğinde ayrı bir
+> `.shortcuts` dosyası değil, `konsoleui.rc` + `sessionui.rc` yazıyor ve
+> ikisinin sonuna **boş** bir `<ActionProperties scheme="VSCode"/>` koyuyor.
+> Kısayol ezmeleri o elemanın içine giriyor. Aksiyonun hangi dosyada olduğu
+> önemli: `KXMLGUIFactory` her istemcinin `ActionProperties`'ini yalnızca kendi
+> aksiyonlarına uygular — `edit_copy`'yi `konsoleui.rc`'ye yazarsan sessizce
+> hiçbir şey olmaz.
+
+**Doğrulama:** `bash ~/klavye/test-konsole.sh` (Konsole içinde çalıştır)
 
 ### SIGINT nasıl çalışıyor — iki katman
 

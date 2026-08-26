@@ -2,6 +2,7 @@
 # 04-konsole-kisayol.sh — Konsole'a VS Code tarzi kisayol semasi uygular.
 #
 #   bash ~/klavye/04-konsole-kisayol.sh            (sudo GEREKMEZ)
+#   bash ~/klavye/04-konsole-kisayol.sh --goster   (yazmadan ne yapacagini soyle)
 #   bash ~/klavye/04-konsole-kisayol.sh --keytab   (SIGINT katman 2'yi de kur)
 #   bash ~/klavye/04-konsole-kisayol.sh --kaldir
 #
@@ -9,25 +10,30 @@
 #   Konsole -> Ayarlar -> Klavye Kisayollarini Yapilandir -> Semalari Yonet
 #   -> Yeni Sema -> ad: VSCode -> Kaydet
 #
-# NEDEN: Konsole 26.08 konsoleui.rc'yi diske koymuyor, Qt kaynagina gomuyor.
-# Binary'den aksiyon adlari cikarilamadi (close-session disinda hicbiri).
-# Ad TAHMIN ETMIYORUZ - Konsole'un kendi yazdigi sema dosyasindaki gercek
-# adlari okuyoruz. Hangi aksiyonun hangisi oldugunu da ADINDAN degil, o anki
-# VARSAYILAN KISAYOLUNDAN tespit ediyoruz (Kopyala = Ctrl+Shift+C, vb).
-# Eslesen her sey ekrana basilir ki dogrulayabilesin.
+# MEKANIZMA (olculdu, tahmin degil):
+# Konsole 26.08 konsoleui.rc'yi diske koymuyor, Qt kaynagina gomuyor. "Yeni Sema"
+# dedigin an ~/.local/share/kxmlgui5/konsole/ altina IKI dosya yaziyor:
+#     konsoleui.rc   -> pencere duzeyi aksiyonlar (new-tab, close-window...)
+#     sessionui.rc   -> oturum duzeyi aksiyonlar (edit_copy, edit_paste...)
+# ve her ikisinin sonuna BOS bir <ActionProperties scheme="VSCode"/> koyuyor.
+# Kisayol ezmeleri iste o elemanin ICINE yaziliyor. Bu script onu dolduruyor.
+#
+# Aksiyon adlari TAHMIN EDILMIYOR - yukaridaki dosyalardan okunuyor ve
+# yazmadan once "bu ad gercekten var mi" diye DOGRULANIYOR.
 
-set -euo pipefail
+set -uo pipefail
 KOK="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SEMA_DIZIN="$HOME/.local/share/kxmlgui5/konsole"
-SEMA="$SEMA_DIZIN/VSCode.shortcuts"
 KEYTAB_DIZIN="$HOME/.local/share/konsole"
 KEYTAB="$KEYTAB_DIZIN/VSCode.keytab"
-KEYTAB_KUR=0; KALDIR=0
+SEMA_ADI="VSCode"
+KEYTAB_KUR=0; KALDIR=0; GOSTER=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
     --keytab) KEYTAB_KUR=1; shift ;;
     --kaldir) KALDIR=1; shift ;;
+    --goster) GOSTER=1; shift ;;
     *) echo "bilinmeyen secenek: $1" >&2; exit 2 ;;
   esac
 done
@@ -39,9 +45,9 @@ if [[ $KALDIR -eq 1 ]]; then
   exit 0
 fi
 
-if [[ ! -f "$SEMA" ]]; then
+if [[ ! -f "$SEMA_DIZIN/konsoleui.rc" || ! -f "$SEMA_DIZIN/sessionui.rc" ]]; then
   cat <<'EOF'
-HATA: sema dosyasi yok.
+HATA: sema dosyalari yok.
 
 Once su adimi ELLE yap (15 saniye):
 
@@ -50,96 +56,112 @@ Once su adimi ELLE yap (15 saniye):
           -> Yeni Sema (New Scheme...)   ad: VSCode
           -> Kaydet (Save Scheme)
 
-Bu, Konsole'un TUM gercek aksiyon adlarini iceren su dosyayi uretir:
-  ~/.local/share/kxmlgui5/konsole/VSCode.shortcuts
+Bu, Konsole'un TUM gercek aksiyon adlarini iceren su iki dosyayi uretir:
+  ~/.local/share/kxmlgui5/konsole/konsoleui.rc
+  ~/.local/share/kxmlgui5/konsole/sessionui.rc
 
 Sonra bu scripti tekrar calistir.
 EOF
   exit 2
 fi
 
-cp -a "$SEMA" "$SEMA.oncesi-$(date +%Y%m%d-%H%M%S)"
+/usr/bin/python3 - "$SEMA_DIZIN" "$SEMA_ADI" "$GOSTER" <<'PYEOF'
+import json, pathlib, re, sys, datetime
 
-/usr/bin/python3 - "$SEMA" <<'PYEOF'
-import sys, xml.etree.ElementTree as ET
+dizin, sema, goster = pathlib.Path(sys.argv[1]), sys.argv[2], sys.argv[3] == '1'
 
-yol = sys.argv[1]
-agac = ET.parse(yol)
-kok  = agac.getroot()
+# dosya -> [(aksiyon_adi, kisayol, insan okunur ad), ...]
+# Aksiyonun HANGI dosyada oldugu onemli: KXMLGUIFactory her istemcinin
+# ActionProperties'ini yalnizca KENDI aksiyonlarina uygular. edit_copy'yi
+# konsoleui.rc'ye yazarsan sessizce hicbir sey olmaz.
+PLAN = {
+    'sessionui.rc': [
+        ('edit_copy',      'Ctrl+C',                     'Kopyala'),
+        ('edit_paste',     'Ctrl+V;Ctrl+Shift+V',        'Yapıştır'),
+        ('edit_find',      'Ctrl+F',                     'Bul'),
+        ('edit_find_next', 'F3',                         'Sonrakini bul'),
+        ('edit_find_prev', 'Shift+F3',                   'Öncekini bul'),
+        ('close-session',  'Ctrl+W',                     'Sekmeyi kapat'),
+    ],
+    'konsoleui.rc': [
+        ('new-tab',        'Ctrl+T',                     'Yeni sekme'),
+    ],
+}
 
-eylemler = kok.iter('Action')
-tablo = {}          # varsayilan kisayol -> Action ogesi
-tum   = []
-for e in eylemler:
-    tum.append(e)
-    ks = (e.get('shortcut') or '').strip()
-    for tek in [k.strip() for k in ks.split(';') if k.strip()]:
-        tablo.setdefault(tek, []).append(e)
+rapor, hata = [], 0
 
-if len(tum) < 10:
-    raise SystemExit(
-        f"HATA: sema dosyasinda sadece {len(tum)} aksiyon var. Konsole semayi\n"
-        "tam yazmamis. 'Semalari Yonet' penceresinde 'Yeni Sema' ile tekrar dene.")
+for dosya, istekler in PLAN.items():
+    p = dizin / dosya
+    metin = p.read_text(encoding='utf-8')
 
-# (varsayilan kisayol, yeni kisayol, insan okunur ad)
-ISTEK = [
-    ("Ctrl+Shift+C", "Ctrl+C",                       "Kopyala"),
-    ("Ctrl+Shift+V", "Ctrl+V; Ctrl+Shift+V",         "Yapistir"),
-    ("Ctrl+Shift+F", "Ctrl+F",                       "Bul"),
-    ("Ctrl+Shift+T", "Ctrl+T",                       "Yeni sekme"),
-    ("Ctrl+Shift+W", "Ctrl+W",                       "Sekmeyi kapat"),
-    ("Shift+Right",  "Ctrl+Tab; Shift+Right",        "Sonraki sekme"),
-    ("Shift+Left",   "Ctrl+Shift+Tab; Shift+Left",   "Onceki sekme"),
-]
+    # 1) Aksiyon adlari gercekten bu dosyada mi? Yazmadan once dogrula.
+    mevcut = set(re.findall(r'<Action[^>]*\bname="([^"]+)"', metin))
+    gecerli = []
+    for ad, tus, insan in istekler:
+        if ad in mevcut:
+            gecerli.append((ad, tus, insan))
+        else:
+            rapor.append((dosya, ad, tus, insan, 'YOK'))
+            hata += 1
 
-print(f"sema dosyasinda {len(tum)} aksiyon bulundu\n")
-print(f"{'ne':<16}{'varsayilan':<16}{'aksiyon adi':<28}{'yeni'}")
-print("-" * 82)
-
-uygulandi = eksik = 0
-rapor = []
-for varsayilan, yeni, ad in ISTEK:
-    adaylar = tablo.get(varsayilan, [])
-    if not adaylar:
-        print(f"{ad:<16}{varsayilan:<16}{'-- BULUNAMADI --':<28}atlandi")
-        eksik += 1
+    if goster or not gecerli:
+        for ad, tus, insan in gecerli:
+            rapor.append((dosya, ad, tus, insan, 'hazir'))
         continue
-    if len(adaylar) > 1:
-        # Birden fazla aksiyon ayni kisayolu tasiyorsa karar bize kalmaz.
-        adlar = ', '.join(a.get('name', '?') for a in adaylar)
-        print(f"{ad:<16}{varsayilan:<16}{'BELIRSIZ: ' + adlar:<28}atlandi")
-        eksik += 1
+
+    # 2) <ActionProperties scheme="VSCode"> blogunu kur/yenile (idempotent).
+    blok = f'<ActionProperties scheme="{sema}">\n'
+    for ad, tus, _ in gecerli:
+        blok += f'  <Action name="{ad}" shortcut="{tus}"/>\n'
+    blok += ' </ActionProperties>'
+
+    yeni, n = re.subn(
+        rf'<ActionProperties\s+scheme="{re.escape(sema)}"\s*(?:/>|>.*?</ActionProperties>)',
+        blok, metin, flags=re.S)
+    if n == 0:
+        # Sema elemani hic yoksa </gui> oncesine ekle
+        yeni, n = re.subn(r'</gui>', ' ' + blok + '\n</gui>', metin)
+    if n == 0:
+        rapor.append((dosya, '-', '-', 'ActionProperties yerlestirilemedi', 'HATA'))
+        hata += 1
         continue
-    e = adaylar[0]
-    e.set('shortcut', yeni)
-    print(f"{ad:<16}{varsayilan:<16}{e.get('name', '?'):<28}{yeni}")
-    rapor.append((ad, e.get('name', '?'), yeni))
-    uygulandi += 1
 
-agac.write(yol, encoding='utf-8', xml_declaration=True)
-print(f"\n{uygulandi} uygulandi, {eksik} atlandi")
+    damga = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
+    (dizin / f'{dosya}.oncesi-{damga}').write_text(metin, encoding='utf-8')
+    p.write_text(yeni, encoding='utf-8')
+    for ad, tus, insan in gecerli:
+        rapor.append((dosya, ad, tus, insan, 'yazildi'))
 
-# KISAYOLLAR.md'nin uretilen bolumu icin makine okunur kayit
-import pathlib, json
-pathlib.Path(yol).with_name('kesfedilen-aksiyonlar.json').write_text(
-    json.dumps(rapor, ensure_ascii=False, indent=2), encoding='utf-8')
+print(f"{'DOSYA':<16}{'AKSIYON':<18}{'KISAYOL':<24}{'NE':<18}DURUM")
+print('-' * 92)
+for dosya, ad, tus, insan, durum in rapor:
+    print(f'{dosya:<16}{ad:<18}{tus:<24}{insan:<18}{durum}')
 
-if eksik:
-    raise SystemExit(1)
+if not goster:
+    kayit = [(insan, ad, tus) for _d, ad, tus, insan, durum in rapor if durum == 'yazildi']
+    (dizin / 'kesfedilen-aksiyonlar.json').write_text(
+        json.dumps(kayit, ensure_ascii=False, indent=2), encoding='utf-8')
+
+sys.exit(1 if hata else 0)
 PYEOF
 DURUM=$?
 
-kwriteconfig6 --file konsolerc --group "Shortcut Schemes" --key "Current Scheme" "VSCode"
+if [[ $GOSTER -eq 1 ]]; then
+  echo
+  echo "(--goster kipi: hicbir sey yazilmadi)"
+  exit 0
+fi
+
+kwriteconfig6 --file konsolerc --group "Shortcut Schemes" --key "Current Scheme" "$SEMA_ADI"
 echo
-echo "konsolerc -> [Shortcut Schemes] Current Scheme=VSCode"
+echo "konsolerc -> [Shortcut Schemes] Current Scheme=$SEMA_ADI"
 
 # ---------------------------------------------------------- SIGINT katman 2
 if [[ $KEYTAB_KUR -eq 1 ]]; then
   echo
   echo "UYARI: Konsole'un varsayilan tus tablosu C++'ta gomulu; diskte"
   echo "default.keytab YOK. Keytab dosyalari KATMANLI DEGIL, standalone."
-  echo "Tek satirlik bir keytab ok/F/Home-End tuslarini bozabilir."
-  echo "Bu yuzden katman 1 (secim-gecisi) once olculmeli - bkz. test 9."
+  echo "Once katman 1 (secim-gecisi) olculmeli."
   read -r -p "Yine de kurulsun mu? (e/H) " c
   if [[ "${c,,}" == "e" ]]; then
     mkdir -p "$KEYTAB_DIZIN"
@@ -149,13 +171,12 @@ if [[ $KEYTAB_KUR -eq 1 ]]; then
   fi
 fi
 
-# Widget'in sag tik yardim panelini yeni kesfedilen kisayollarla tazele.
+# Widget'in sag tik yardim panelini tazele.
 if [[ -d "$HOME/.local/share/plasma/plasmoids/org.kaan.qftoggle" ]]; then
   echo
   bash "$KOK/uret-yardim.sh"
-  echo "(yardim paneli tazelendi - widget'a sag tikla gorebilirsin)"
 fi
 
 echo
-echo "Konsole'u KAPATIP yeniden ac (sema oturum basinda okunuyor)."
+echo "Konsole'u TAMAMEN KAPATIP yeniden ac (sema oturum basinda okunuyor)."
 exit $DURUM
