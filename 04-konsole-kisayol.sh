@@ -76,8 +76,12 @@ dizin, sema, goster = pathlib.Path(sys.argv[1]), sys.argv[2], sys.argv[3] == '1'
 # konsoleui.rc'ye yazarsan sessizce hicbir sey olmaz.
 PLAN = {
     'sessionui.rc': [
-        ('edit_copy',      'Ctrl+C',                     'Kopyala'),
-        ('edit_paste',     'Ctrl+V;Ctrl+Shift+V',        'Yapıştır'),
+        # Ctrl+Ins / Shift+Ins KASTEN ekli: kisayol "fiziksel tus" degil,
+        # "o harfi ureten tus" demektir. Q -> F gecince 'c' ve 'v' harfleri
+        # yer degistiriyor (olculdu: Q'da AB03=c AB04=v, f_custom'da tam tersi).
+        # Insert tusu hicbir duzende tasinmaz -> her iki duzende de ayni yerde.
+        ('edit_copy',      'Ctrl+C;Ctrl+Ins',            'Kopyala'),
+        ('edit_paste',     'Ctrl+V;Ctrl+Shift+V;Shift+Ins', 'Yapıştır'),
         ('select-all',     'Ctrl+A',                     'Tümünü seç'),
         ('edit_find',      'Ctrl+F',                     'Bul'),
         ('edit_find_next', 'F3',                         'Sonrakini bul'),

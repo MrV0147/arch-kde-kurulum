@@ -79,9 +79,9 @@ yerleşiyor. Böylece 32 harfin hepsi tam, hiçbir Q sembolü kaybolmuyor.
 
 | Tuş | Ne yapar | Aksiyon adı | Nerede tanımlı | Eskiden neydi / ne kaybettim |
 |---|---|---|---|---|
-| `Ctrl+C` | **Kopyala** | `edit_copy` | `sessionui.rc` | Eskiden `Ctrl+Shift+C`. Seçim yokken tuş terminale geçer → **`Ctrl+C` hâlâ işlemi durdurur** |
+| `Ctrl+C` · `Ctrl+Insert` | **Kopyala** | `edit_copy` | `sessionui.rc` | Eskiden `Ctrl+Shift+C`. Seçim yokken tuş terminale geçer → **`Ctrl+C` hâlâ işlemi durdurur** |
 | `Ctrl+Shift+C` | **SIGINT** (işlemi durdur) | — | keytab (katman 2, isteğe bağlı) | Eskiden Kopyala'ydı |
-| `Ctrl+V` | Yapıştır | `edit_paste` | `sessionui.rc` | Eskiden `Ctrl+Shift+V` |
+| `Ctrl+V` · `Shift+Insert` | Yapıştır | `edit_paste` | `sessionui.rc` | Eskiden `Ctrl+Shift+V` |
 | `Ctrl+Shift+V` | Yapıştır (ikinci) | `edit_paste` | `sessionui.rc` | Değişmedi, eski alışkanlık korundu |
 | `Ctrl+A` | **Tümünü seç** (kaydırma tamponu) | `select-all` | `sessionui.rc` | Eskiden `Ctrl+Shift+A`. **Kayıp: `C-a` = satır başına git → yerine `Home` tuşu** |
 | `Ctrl+F` | Bul | `edit_find` | `sessionui.rc` | Eskiden `Ctrl+Shift+F`. **Kayıp:** readline `C-f` (ileri karakter) → yerine **`→` tuşu** |
@@ -117,6 +117,38 @@ elle atayabilirsin.
 > `konsoleui.rc`'ye yazarsan hata bile vermez, sessizce hiçbir şey olmaz.
 
 **Doğrulama:** `bash ~/klavye/test-konsole.sh` (Konsole içinde çalıştır)
+
+### ⚠️ Kısayollar düzene bağlı — `C` ve `V` yer değiştiriyor
+
+Bir kısayol "şu fiziksel tuş" demek değildir; **"`c` harfini üreten tuş"** demektir.
+Düzen değişince o harf taşınır, kısayol da onunla taşınır.
+
+Ölçüldü — Q'da `AB03=c, AB04=v`, `f_custom`'da tam tersi. Yani **C ve V iki
+düzen arasında bire bir yer değiştiriyor:**
+
+| F düzenindeyken bu kısayol için… | …Q klavyedeki şu tuşa basarsın |
+|---|---|
+| `Ctrl+C` (kopyala) | **`V`** |
+| `Ctrl+V` (yapıştır) | **`C`** |
+| `Ctrl+A` (tümünü seç) | `F` |
+| `Ctrl+F` (bul) | `Q` |
+| `Ctrl+T` (yeni sekme) | `H` |
+| `Ctrl+W` (sekmeyi kapat) | `Ü` |
+| `Ctrl+X` | `Ç` |
+| `Ctrl+Z` | `N` |
+
+Bu bir hata değil, F/Q projesinin doğal sonucu: F düzenindeyken zaten F'ye göre
+yazıyorsun, `c` de F'nin koyduğu yerde.
+
+**Kaçış yolu — `Insert` tuşu hiçbir düzende taşınmaz:**
+
+| Tuş | Ne yapar | Neden güvenli |
+|---|---|---|
+| `Ctrl+Insert` | Kopyala | Harf tuşu değil, konumu sabit |
+| `Shift+Insert` | Yapıştır | Aynı sebep |
+
+Düzenden bağımsız çalışmasını istediğin her şey için bunları kullan. Klasik X11
+terminal kısayolları oldukları için kas hafızası da tanıdık gelir.
 
 ### SIGINT nasıl çalışıyor — iki katman
 

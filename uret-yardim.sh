@@ -79,6 +79,15 @@ if kesif.exists():
     except Exception:
         pass
 
+# Kisayol "fiziksel tus" degil "o harfi ureten tus" demek. F duzenine gecince
+# c ve v yer degistiriyor. Widget'in isi zaten duzen degistirmek oldugu icin
+# bu uyarinin yeri tam burasi.
+kons.append(satir('— düzen uyarısı —', 'F moduna geçince kısayol harfleri kayar'))
+kons.append(satir('F: Ctrl+C', "Q klavyedeki  V  tuşuna bas"))
+kons.append(satir('F: Ctrl+V', "Q klavyedeki  C  tuşuna bas"))
+kons.append(satir('Ctrl+Insert', 'Kopyala — düzenden BAĞIMSIZ', 'Insert tuşu hiç taşınmaz'))
+kons.append(satir('Shift+Insert', 'Yapıştır — düzenden BAĞIMSIZ'))
+
 keytab_var = pathlib.Path(EV, '.local/share/konsole/VSCode.keytab').exists()
 if kons:
     kons.append(satir('Ctrl+Shift+C', 'İşlemi durdur (SIGINT)',
