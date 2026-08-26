@@ -26,6 +26,7 @@ SISTEM_DOSYALARI=(
   /usr/share/X11/xkb/symbols/tr
   /usr/share/X11/xkb/rules/evdev.xml
   /usr/share/X11/xkb/rules/evdev.lst
+  /usr/share/X11/xkb/types/complete
   /etc/X11/xorg.conf.d/00-keyboard.conf
 )
 KULLANICI_DOSYALARI=(

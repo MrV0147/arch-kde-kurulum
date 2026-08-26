@@ -10,7 +10,20 @@
 # KURAL:
 #   seviye 1-2 (harf, buyuk harf)     -> tr(f)'den      (F klavye harf konumlari)
 #   seviye 3-4 (AltGr, AltGr+Shift)   -> tr(basic)'ten  (Q klavye sembol katmani)
+#   seviye 5   (Control basiliyken)   -> tr(basic)'ten  (Q klavye HARFI)
 #   sembol tuslari                     -> hic dokunulmaz (include "tr(basic)")
+#
+# 5. SEVIYE NEDEN VAR:
+# Bir kisayol "su fiziksel tus" degil "o harfi ureten tus" demektir. F duzenine
+# gecince 32 harften 30'u yer degistiriyor - Ctrl+C ile Ctrl+V birbirinin
+# yerine geciyordu. Cozum: Control'u bir SEVIYE SECICI yapmak. Control
+# basiliyken tus, o fiziksel konumun Q'daki harfini uretiyor; boylece butun
+# Ctrl+<harf> kisayollari iki duzende de AYNI fiziksel tusta kaliyor.
+# preserve[Control] sayesinde Control yine de uygulamaya iletiliyor - yani
+# uygulama gercekten "Ctrl+C" goruyor, sadece "c" degil.
+# Ayni numarayi upstream de kullaniyor: types/pc -> PC_CONTROL_SUPER_LEVEL2.
+# Bu XKB katmaninda oldugu icin Konsole'la sinirli degil: Firefox, VS Code,
+# her yerde gecerli.
 #
 # Cikti: payload/tr-f_custom.xkb
 
@@ -90,13 +103,15 @@ for hedef in sorted(HARITA, key=lambda k: (k[:2], int(k[2:]))):
     kaynak = HARITA[hedef]
     s1, s2 = sev(F, kaynak, 1), sev(F, kaynak, 2)   # harf: F'den
     s3, s4 = sev(Q, hedef, 3),  sev(Q, hedef, 4)    # AltGr: Q'dan, ayni fiziksel tus
+    s5     = sev(Q, hedef, 1)                       # Ctrl: bu tusun Q'daki harfi
     # Tip her tusta ACIKCA yazilir: include "tr(basic)" sonrasi tus yeniden
     # tanimlanirken eski tusun tipi sizabilir (orn. <AC11> Q'da 'i' icin
     # SEMIALPHABETIC'ti, bizde 's' oluyor). Acik yazinca sizma imkansiz.
-    tip = 'FOUR_LEVEL_ALPHABETIC' if alfabetik_cift(s3, s4) else 'FOUR_LEVEL_SEMIALPHABETIC'
+    # Tip artik her zaman QF_CTRL_ALPHABETIC: 5. seviyeyi Control seciyor.
+    # (Tipin tanimi types/complete icine 03-xkb-kur.sh tarafindan enjekte edilir.)
     satirlar.append(
-        f'    key <{hedef}> {{ type[group1] = "{tip}",\n'
-        f'                 [ {s1:>14}, {s2:>14}, {s3:>14}, {s4:>14} ]}};'
+        f'    key <{hedef}> {{ type[group1] = "QF_CTRL_ALPHABETIC",\n'
+        f'                 [ {s1:>14}, {s2:>14}, {s3:>14}, {s4:>14}, {s5:>14} ]}};'
     )
 
 blok = f'''
@@ -106,6 +121,8 @@ blok = f'''
 //
 //   seviye 1-2 -> tr(f)      : harf konumlari F klavye
 //   seviye 3-4 -> tr(basic)  : AltGr katmani Q klavyeyle BIREBIR ayni
+//   seviye 5   -> tr(basic)  : Control basiliyken o tusun Q'daki harfi, yani
+//                              butun Ctrl+<harf> kisayollari Q konumunda kalir
 //   sembol/sayi tuslari      : include "tr(basic)" ile oldugu gibi
 //
 // Tek bilincli sapma: F'de <BKSL>'de duran 'x', burada <AB09>'a alindi; cunku

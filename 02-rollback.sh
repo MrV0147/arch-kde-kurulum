@@ -27,7 +27,8 @@ uyar() { echo "  [!]  $*"; UYARI=$((UYARI+1)); }
 echo "== 1/6  XKB dosyalari (.backup'tan) =="
 for f in /usr/share/X11/xkb/symbols/tr \
          /usr/share/X11/xkb/rules/evdev.xml \
-         /usr/share/X11/xkb/rules/evdev.lst; do
+         /usr/share/X11/xkb/rules/evdev.lst \
+         /usr/share/X11/xkb/types/complete; do
   if [[ -f "$f.backup" ]]; then
     cp -a "$f.backup" "$f" && echo "  [ok] $f"
   else

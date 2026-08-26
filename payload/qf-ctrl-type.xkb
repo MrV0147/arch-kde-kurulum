@@ -1,0 +1,51 @@
+    // -----------------------------------------------------------------------
+    // QF_CTRL_ALPHABETIC — Control'u bir SEVIYE SECICI yapar.
+    //
+    // NEDEN: Bir kisayol "su fiziksel tus" degil, "o harfi ureten tus" demektir.
+    // tr(f_custom) duzeninde 32 harften 30'u Q'ya gore yer degistiriyor - yani
+    // Ctrl+C ile Ctrl+V birbirinin fiziksel yerine geciyordu.
+    //
+    // Cozum: Control basiliyken tus, o fiziksel konumun Q klavyedeki harfini
+    // uretsin (seviye 5). Boylece BUTUN Ctrl+<harf> kisayollari iki duzende de
+    // ayni fiziksel tusta kalir; yazim ise F duzenine gore devam eder.
+    //
+    // preserve[Control] KRITIK: Control bir seviye secici olarak kullanildiginda
+    // normalde "tuketilir" ve uygulamaya ulasmaz - uygulama sadece "c" gorur,
+    // "Ctrl+C" degil. preserve[] bunu engeller, Control iletilmeye devam eder.
+    // Ayni deseni upstream de kullaniyor: types/pc -> PC_CONTROL_SUPER_LEVEL2.
+    //
+    // Bu XKB katmaninda oldugu icin tek bir uygulamayla sinirli degil:
+    // Konsole, Firefox, VS Code, hepsinde gecerli.
+    // -----------------------------------------------------------------------
+    type "QF_CTRL_ALPHABETIC" {
+        modifiers = Shift + Lock + LevelThree + Control;
+
+        map[None]                    = Level1;
+        map[Shift]                   = Level2;
+        map[Lock]                    = Level2;
+        map[Shift+Lock]              = Level1;
+        map[LevelThree]              = Level3;
+        map[Shift+LevelThree]        = Level4;
+        map[Lock+LevelThree]         = Level4;
+        map[Shift+Lock+LevelThree]   = Level3;
+
+        map[Control]                     = Level5;
+        map[Shift+Control]               = Level5;
+        map[Lock+Control]                = Level5;
+        map[Shift+Lock+Control]          = Level5;
+        map[LevelThree+Control]          = Level5;
+        map[Shift+LevelThree+Control]    = Level5;
+
+        preserve[Control]                  = Control;
+        preserve[Shift+Control]            = Shift+Control;
+        preserve[Lock+Control]             = Control;
+        preserve[Shift+Lock+Control]       = Shift+Control;
+        preserve[LevelThree+Control]       = Control;
+        preserve[Shift+LevelThree+Control] = Shift+Control;
+
+        level_name[Level1] = "Base";
+        level_name[Level2] = "Shift";
+        level_name[Level3] = "AltGr";
+        level_name[Level4] = "Shift AltGr";
+        level_name[Level5] = "Ctrl (Q konumu)";
+    };

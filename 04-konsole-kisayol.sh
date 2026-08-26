@@ -87,6 +87,16 @@ dizin, sema_dosya, goster = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
 # duzende tasinmaz -> her iki duzende de ayni yerde.
 # Kisayollar LISTE olarak tutuluyor ve AYIRICI tek yerde uygulanıyor.
 #
+# DUZEN BAGIMSIZLIGI (olculdu):
+# Bir kisayol "su fiziksel tus" degil, "o harfi ureten tus" demektir. Q ve
+# f_custom arasinda 32 harften 30'u yer degistiriyor (sadece p ve l sabit).
+# Harf OLMAYAN 453 tusun hepsi ayni yerde. Bu yuzden kritik eylemlere harf
+# olmayan bir alternatif de baglaniyor:
+#     Ctrl+Insert  kopyala      Shift+Insert  yapistir      Ctrl+F4  sekmeyi kapat
+#     F3 / Shift+F3  bul ileri/geri  (islev tuslari zaten sabit)
+# Ctrl+C'yi iki duzende AYNI fiziksel tusa oturtmak imkansiz: F modunda o tus
+# 'v' uretiyor ve Ctrl+V'nin yapistir kalmasi gerekiyor.
+#
 # NEDEN: Qt'nin QKeySequence::listFromString ayiricisi "; " - noktali virgul
 # ARTI BOSLUK. Boslugu koymazsan Qt tum dizgeyi tek bir kombinasyon sanip
 # ayristiramiyor ve aksiyona BOS kisayol veriyor. Olculdu (PySide6 ile):
@@ -102,7 +112,7 @@ ISTEKLER = [
     ('edit_find',      ['Ctrl+F'],                                'Bul'),
     ('edit_find_next', ['F3'],                                    'Sonrakini bul'),
     ('edit_find_prev', ['Shift+F3'],                              'Öncekini bul'),
-    ('close-session',  ['Ctrl+W'],                                'Sekmeyi kapat'),
+    ('close-session',  ['Ctrl+W', 'Ctrl+F4'],                     'Sekmeyi kapat'),
     ('new-tab',        ['Ctrl+T'],                                'Yeni sekme'),
 ]
 ISTEKLER = [(ad, AYIRICI.join(tuslar), insan) for ad, tuslar, insan in ISTEKLER]

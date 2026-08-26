@@ -43,6 +43,14 @@ def ayristir(yol):
         t[ad] = [x.strip() for x in s.split(',')]
     return t
 
+def tipler(yol):
+    """tus adi -> tip adi"""
+    metin = open(yol, encoding='utf-8').read()
+    return dict(re.findall(r'key\s+<(\w+)>\s*\{\s*type=\s*"([^"]*)"', metin))
+
+def ham(yol):
+    return open(yol, encoding='utf-8').read()
+
 Q, F, C = map(ayristir, sys.argv[1:4])
 
 HARFLER = ['a','b','c','ccedilla','d','e','f','g','gbreve','h','idotless','i',
@@ -99,6 +107,44 @@ bildir("x, F'de <BKSL>'de -> bizde <AB09>'da",
        F.get('BKSL', [''])[0] == 'x' and C.get('AB09', [''])[0] == 'x')
 bildir("<BKSL> Q'daki virgulu koruyor",
        C.get('BKSL') == Q.get('BKSL') and C.get('BKSL', [''])[0] == 'comma')
+
+print("\nOLCUM 5 — Ctrl seviyesi (5) o tusun Q'daki harfi mi")
+# Bu, "Ctrl+<harf> kisayollari iki duzende de ayni fiziksel tusta" iddiasinin
+# calistirilabilir kaniti.
+fark = []
+for tus in HARF_TUSLARI:
+    q1 = Q.get(tus, [''])[0]
+    sems = C.get(tus, [])
+    c5 = sems[4] if len(sems) > 4 else '(seviye 5 YOK)'
+    if c5 != q1:
+        fark.append((tus, q1, c5))
+bildir(f'32 harf tusu, {len(fark)} fark', not fark,
+       '\n'.join(f'    <{t}>  Q seviye1={q}  f_custom seviye5={c}' for t, q, c in fark))
+
+# En kritik ikili: Q'nun C ve V tuslari
+ab03 = C.get('AB03', [])
+ab04 = C.get('AB04', [])
+bildir("Q'nun C tusunda (AB03): yazarken 'v', Ctrl ile 'c'",
+       len(ab03) > 4 and ab03[0] == 'v' and ab03[4] == 'c')
+bildir("Q'nun V tusunda (AB04): yazarken 'c', Ctrl ile 'v'",
+       len(ab04) > 4 and ab04[0] == 'c' and ab04[4] == 'v')
+
+print('\nOLCUM 6 — Control uygulamaya iletiliyor mu (preserve)')
+# preserve[] olmazsa Control bir seviye secici olarak "tuketilir" ve uygulama
+# sadece "c" gorur, "Ctrl+C" degil. Bu satir olmadan tum numara ise yaramaz.
+metin_c = ham(sys.argv[3])
+tip_blok = re.search(r'type "QF_CTRL_ALPHABETIC" \{(.*?)\n\t\};', metin_c, re.S)
+govde = tip_blok.group(1) if tip_blok else ''
+bildir('QF_CTRL_ALPHABETIC tipi keymap\'de var', bool(tip_blok))
+bildir('preserve[Control]= Control satiri var',
+       'preserve[Control]= Control' in govde,
+       '    preserve yoksa Control tuketilir, uygulama Ctrl gormez')
+bildir('Control seviye 5\'i seciyor', 'map[Control]= 5' in govde)
+
+tip_haritasi = tipler(sys.argv[3])
+yanlis_tip = [t for t in HARF_TUSLARI if tip_haritasi.get(t) != 'QF_CTRL_ALPHABETIC']
+bildir(f'32 harf tusunun hepsi QF_CTRL_ALPHABETIC, {len(yanlis_tip)} sapma',
+       not yanlis_tip, f'    {yanlis_tip[:8]}')
 
 print(f'\nSONUC: {gecti} gecti, {basarisiz} kaldi')
 sys.exit(1 if basarisiz else 0)

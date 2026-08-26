@@ -34,6 +34,7 @@ done
 log() { [[ $SESSIZ -eq 1 ]] || echo "$@"; }
 
 PAYLOAD="$KOK_DIZIN/payload/tr-f_custom.xkb"
+TIP_PAYLOAD="$KOK_DIZIN/payload/qf-ctrl-type.xkb"
 if [[ $KALDIR -eq 0 && ! -f "$PAYLOAD" ]]; then
   log "payload yok, uretiliyor..."
   bash "$KOK_DIZIN/uret-f_custom.sh" >/dev/null
@@ -47,24 +48,40 @@ command -v xkbcli  >/dev/null || { echo "HATA: xkbcli yok (paket: libxkbcommon)"
 SAHNE="$(mktemp -d)"
 trap 'rm -rf "$SAHNE"' EXIT
 for e in "$XKB_KOK"/*; do ln -s "$e" "$SAHNE/$(basename "$e")"; done
-for alt in symbols rules; do
+for alt in symbols rules types; do
   rm "$SAHNE/$alt"
   mkdir "$SAHNE/$alt"
   for e in "$XKB_KOK/$alt"/*; do ln -s "$e" "$SAHNE/$alt/$(basename "$e")"; done
 done
-for f in symbols/tr rules/evdev.xml rules/evdev.lst; do
+for f in symbols/tr rules/evdev.xml rules/evdev.lst types/complete; do
   rm "$SAHNE/$f"; cp "$XKB_KOK/$f" "$SAHNE/$f"; chmod u+w "$SAHNE/$f"
 done
 
 # ------------------------------------------------------------- duzenleme
-/usr/bin/python3 - "$SAHNE" "$PAYLOAD" "$KALDIR" <<'PYEOF'
+/usr/bin/python3 - "$SAHNE" "$PAYLOAD" "$KALDIR" "$TIP_PAYLOAD" <<'PYEOF'
 import re, sys, pathlib
 
 sahne, payload_yol, kaldir = sys.argv[1], sys.argv[2], sys.argv[3] == '1'
+tip_payload_yol = sys.argv[4]
 sahne = pathlib.Path(sahne)
 
 BAS = '// >>> f_custom BASLANGIC (klavye/uret-f_custom.sh uretti) >>>'
 BIT = '// <<< f_custom BITIS <<<'
+BAS_TIP = '    // >>> QF_CTRL_ALPHABETIC BASLANGIC (klavye/03-xkb-kur.sh) >>>'
+BIT_TIP = '    // <<< QF_CTRL_ALPHABETIC BITIS <<<'
+
+# ------------------------------------------------------------- types/complete
+# QF_CTRL_ALPHABETIC tipi. symbols/tr bu tipe ad ile basvurdugu icin ONCE
+# burasi yazilmali, yoksa keymap derlenmez.
+p = sahne / 'types' / 'complete'
+metin = p.read_text(encoding='utf-8')
+metin = re.sub(re.escape(BAS_TIP) + r'.*?' + re.escape(BIT_TIP) + r'\n?', '', metin, flags=re.S)
+if not kaldir:
+    tip = pathlib.Path(tip_payload_yol).read_text(encoding='utf-8')
+    # xkb_types blogunun son kapanisindan hemen once ekle
+    son = metin.rstrip().rfind('};')
+    metin = (metin[:son] + BAS_TIP + '\n' + tip.rstrip('\n') + '\n' + BIT_TIP + '\n' + metin[son:])
+p.write_text(metin, encoding='utf-8')
 
 # ---------------------------------------------------------------- symbols/tr
 p = sahne / 'symbols' / 'tr'
@@ -155,7 +172,7 @@ if not kaldir:
         raise SystemExit('HATA: evdev.lst icinde "f  tr: Turkish (F)" satiri bulunamadi')
 p.write_text('\n'.join(satirlar), encoding='utf-8')
 
-print('duzenlendi: symbols/tr, rules/evdev.xml, rules/evdev.lst')
+print('duzenlendi: types/complete, symbols/tr, rules/evdev.xml, rules/evdev.lst')
 PYEOF
 
 # ------------------------------------------------------------- dogrulama
@@ -174,12 +191,12 @@ if [[ $KALDIR -eq 0 ]]; then
 fi
 
 # ----------------------------------------------------------------- kurulum
-if [[ ! -w "$XKB_KOK/symbols/tr" ]]; then
+if [[ ! -w "$XKB_KOK/symbols/tr" || ! -w "$XKB_KOK/types/complete" ]]; then
   echo "HATA: $XKB_KOK/symbols/tr yazilabilir degil. 'sudo' ile calistir." >&2
   exit 1
 fi
 
-for f in symbols/tr rules/evdev.xml rules/evdev.lst; do
+for f in symbols/tr rules/evdev.xml rules/evdev.lst types/complete; do
   cp "$SAHNE/$f" "$XKB_KOK/$f"
 done
 log ""

@@ -137,37 +137,40 @@ elle atayabilirsin.
 
 **Doğrulama:** `bash ~/klavye/test-konsole.sh` (Konsole içinde çalıştır)
 
-### ⚠️ Kısayollar düzene bağlı — `C` ve `V` yer değiştiriyor
+### Kısayollar iki düzende de aynı fiziksel tuşta — nasıl
 
-Bir kısayol "şu fiziksel tuş" demek değildir; **"`c` harfini üreten tuş"** demektir.
-Düzen değişince o harf taşınır, kısayol da onunla taşınır.
+Bir kısayol normalde "şu fiziksel tuş" değil, **"`c` harfini üreten tuş"**
+demektir. Düzen değişince harf taşınır, kısayol da onunla taşınır — ve ölçtük ki
+Q ile `f_custom` arasında **32 harften 30'u yer değiştiriyor** (yalnız `p` ve `l`
+sabit). En kötüsü de `C` ile `V` birbirinin yerine geçiyordu.
 
-Ölçüldü — Q'da `AB03=c, AB04=v`, `f_custom`'da tam tersi. Yani **C ve V iki
-düzen arasında bire bir yer değiştiriyor:**
+Bu **XKB katmanında** çözüldü: `Control` basılıyken tuş, o fiziksel konumun
+**Q klavyedeki harfini** üretiyor.
 
-| F düzenindeyken bu kısayol için… | …Q klavyedeki şu tuşa basarsın |
+```
+Q'nun C tuşu (AB03):   yazarken → v          Ctrl ile → c    →  Ctrl+C
+Q'nun V tuşu (AB04):   yazarken → c          Ctrl ile → v    →  Ctrl+V
+```
+
+Yani F düzeninde yazarken F harfleri geliyor, ama `Ctrl+C` hep Q'daki `C`
+tuşunda kalıyor. **32 harfin hepsi için geçerli**, sadece C/V için değil.
+
+| Nasıl çalışıyor | |
 |---|---|
-| `Ctrl+C` (kopyala) | **`V`** |
-| `Ctrl+V` (yapıştır) | **`C`** |
-| `Ctrl+A` (tümünü seç) | `F` |
-| `Ctrl+F` (bul) | `Q` |
-| `Ctrl+T` (yeni sekme) | `H` |
-| `Ctrl+W` (sekmeyi kapat) | `Ü` |
-| `Ctrl+X` | `Ç` |
-| `Ctrl+Z` | `N` |
+| Tip | `QF_CTRL_ALPHABETIC` — `types/complete` içine enjekte edilir |
+| Mekanizma | `Control` bir **seviye seçici**: `map[Control] = Level5` |
+| Kritik satır | `preserve[Control] = Control` |
+| Kapsam | **Tüm uygulamalar** — Konsole, Firefox, VS Code, hepsi |
 
-Bu bir hata değil, F/Q projesinin doğal sonucu: F düzenindeyken zaten F'ye göre
-yazıyorsun, `c` de F'nin koyduğu yerde.
+`preserve[]` olmasaydı `Control` bir seviye seçici olarak *tüketilir* ve uygulama
+yalnızca `c` görürdü, `Ctrl+C` değil. Aynı deseni upstream de kullanıyor:
+`types/pc` → `PC_CONTROL_SUPER_LEVEL2`.
 
-**Kaçış yolu — `Insert` tuşu hiçbir düzende taşınmaz:**
+**Ölçüldü** (`test-f_custom.sh`, ölçüm 5–6): 32 harf tuşunun hepsinde 5. seviye
+= o tuşun Q'daki harfi, 0 fark; `preserve[Control]` derlenmiş keymap'te mevcut.
 
-| Tuş | Ne yapar | Neden güvenli |
-|---|---|---|
-| `Ctrl+Insert` | Kopyala | Harf tuşu değil, konumu sabit |
-| `Shift+Insert` | Yapıştır | Aynı sebep |
-
-Düzenden bağımsız çalışmasını istediğin her şey için bunları kullan. Klasik X11
-terminal kısayolları oldukları için kas hafızası da tanıdık gelir.
+Bunun yanında `Ctrl+Insert` / `Shift+Insert` de bağlı — `Insert` harf tuşu
+olmadığı için zaten hiçbir düzende taşınmıyor, ikinci bir güvence.
 
 ### SIGINT nasıl çalışıyor — iki katman
 
