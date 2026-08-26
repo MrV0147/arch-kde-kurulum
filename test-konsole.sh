@@ -10,7 +10,7 @@
 # bu yuzden SIGINT tuzaga aliniyor ve olcum olarak sayiliyor.
 
 set -uo pipefail
-SEMA_DIZIN="$HOME/.local/share/kxmlgui5/konsole"
+SEMA_DOSYA="$HOME/.local/share/konsole/shortcuts/VSCode"
 gecti=0; kaldi=0
 ok()   { gecti=$((gecti+1)); printf '  \033[32m[ok]\033[0m    %s\n' "$1"; }
 hata() { kaldi=$((kaldi+1)); printf '  \033[31m[HATA]\033[0m  %s\n' "$1"; }
@@ -18,29 +18,28 @@ bilgi(){ printf '  \033[33m[?]\033[0m     %s\n' "$1"; }
 
 echo "OTOMATIK OLCUMLER"
 
-# Sema KULLANILMIYOR: KXmlGui semayi ayri bir .shortcuts dosyasinda ariyor,
-# Konsole onu hic yazmiyor. Kisayollar ui.rc'deki kosulsuz ActionProperties'te.
-if [[ -z "$(kreadconfig6 --file konsolerc --group 'Shortcut Schemes' --key 'Current Scheme')" ]]; then
-  ok "konsolerc: Current Scheme bos (dogru)"
+# Kisayollar NEREDE: ~/.local/share/konsole/shortcuts/<SemaAdi>
+# (kxmlgui5/konsole/ altinda DEGIL - orada sadece menu yapisi ve aksiyon adlari
+#  var. Bir tur oraya yazdik, sessizce hicbir sey olmadi.)
+if [[ -f "$SEMA_DOSYA" ]] && xmllint --noout "$SEMA_DOSYA" 2>/dev/null; then
+  ok "sema dosyasi var ve gecerli XML"
 else
-  hata "konsolerc: Current Scheme ayarli - kisayollari ezebilir"
+  hata "sema dosyasi yok/bozuk: $SEMA_DOSYA"
 fi
 
-for f in konsoleui.rc sessionui.rc; do
-  if [[ -f "$SEMA_DIZIN/$f" ]] && xmllint --noout "$SEMA_DIZIN/$f" 2>/dev/null; then
-    ok "$f gecerli XML"
-  else
-    hata "$f yok veya bozuk"
-  fi
-done
+SEMA_AKTIF="$(kreadconfig6 --file konsolerc --group 'Shortcut Schemes' --key 'Current Scheme')"
+if [[ "$SEMA_AKTIF" == "VSCode" ]]; then
+  ok "konsolerc: Current Scheme=VSCode"
+else
+  hata "konsolerc: Current Scheme='$SEMA_AKTIF' (VSCode olmali)"
+fi
 
 bekle=(edit_copy edit_paste select-all edit_find edit_find_next edit_find_prev close-session new-tab)
 for a in "${bekle[@]}"; do
-  if grep -qE "<Action name=\"$a\" shortcut=" "$SEMA_DIZIN"/*.rc 2>/dev/null; then
-    tus=$(grep -hoE "<Action name=\"$a\" shortcut=\"[^\"]+\"" "$SEMA_DIZIN"/*.rc | sed 's/.*shortcut="//;s/"//')
+  if tus=$(grep -oE "name=\"$a\" shortcut=\"[^\"]+\"" "$SEMA_DOSYA" 2>/dev/null | sed 's/.*shortcut="//;s/"//'); [[ -n "$tus" ]]; then
     ok "$a -> $tus"
   else
-    hata "$a icin kisayol yazilmamis"
+    hata "$a semada yok"
   fi
 done
 

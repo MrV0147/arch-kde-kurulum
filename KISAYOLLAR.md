@@ -97,24 +97,29 @@ tahmin etmek yerine dokunmadım — istersen Konsole'un kendi kısayol penceresi
 elle atayabilirsin.
 
 **Dosyalar:**
-`~/.local/share/kxmlgui5/konsole/sessionui.rc` ve `konsoleui.rc`
-(her ikisinde atribütsüz `<ActionProperties>` bloğu) ·
-`~/.config/konsolerc` → `[Shortcut Schemes] Current Scheme` **boş olmalı** ·
-`~/.local/share/konsole/VSCode.keytab` (varsa)
 
-> **Mekanizma notu — şema KULLANILMIYOR.** Konsole 26.08, "Yeni Şema"
-> dediğinde `konsoleui.rc` + `sessionui.rc` yazıyor ve ikisinin sonuna boş bir
-> `<ActionProperties scheme="VSCode"/>` koyuyor. Ama `KXmlGui` o şemayı ayrı
-> bir `kxmlgui5/konsole/VSCode.shortcuts` dosyasında arıyor ve Konsole onu
-> **hiç oluşturmuyor** — yani şemaya bağlı blok koşula takılıp uygulanmayabilir.
-> Bu yüzden kısayollar **atribütsüz** `<ActionProperties>` içine yazılıyor
-> (koşulsuz uygulanır) ve `konsolerc`'deki `Current Scheme` **siliniyor** —
-> ayarlı kalırsa KXmlGui kısayolları "şema varsayılanına", yani hiçbir şeye
-> çekip bizimkini ezebilir.
+| Dosya | Ne için |
+|---|---|
+| `~/.local/share/konsole/shortcuts/VSCode` | **Kısayolların gerçek yeri** |
+| `~/.config/konsolerc` → `[Shortcut Schemes] Current Scheme=VSCode` | Şemayı etkinleştirir |
+| `~/.local/share/kxmlgui5/konsole/{konsoleui,sessionui}.rc` | Menü yapısı + **gerçek aksiyon adları** (buradan doğrulanıyor, buraya yazılmıyor) |
+| `~/.local/share/konsole/VSCode.keytab` | SIGINT katman 2 (isteğe bağlı) |
+
+> **Mekanizma notu — üç dosyayı da bulmak zaman aldı.** Konsole 26.08
+> "Yeni Şema" dediğinde `kxmlgui5/konsole/` altına `konsoleui.rc` +
+> `sessionui.rc` yazıyor ve içlerine boş bir `<ActionProperties scheme="VSCode"/>`
+> koyuyor. **Kısayolların yeri orası değil.** Şemanın gövdesi
+> `~/.local/share/konsole/shortcuts/VSCode` dosyasında —
+> `KShortcutSchemesHelper` şemayı `QStandardPaths::AppDataLocation` altında
+> `shortcuts/<ad>` olarak arıyor, Konsole için bu `~/.local/share/konsole`.
+> Konsole o dosyayı boş oluşturuyor: `<gui><ActionProperties/></gui>`.
 >
-> Aksiyonun hangi dosyada olduğu da önemli: `KXMLGUIFactory` her istemcinin
-> `ActionProperties`'ini yalnızca kendi aksiyonlarına uygular — `edit_copy`'yi
-> `konsoleui.rc`'ye yazarsan hata bile vermez, sessizce hiçbir şey olmaz.
+> `ui.rc` dosyalarına yazmayı bir tur denedik — **hata bile vermedi, sessizce
+> hiçbir şey olmadı.** Aksiyon adları için hâlâ o dosyalar okunuyor (menü
+> yapısı orada), ama kısayol yazmak için şema dosyası kullanılıyor.
+>
+> Ayrıca `konsolerc` → `[Shortcut Schemes] Current Scheme=VSCode` **ayarlı
+> olmalı**; ayarlı değilse şema hiç yüklenmez.
 
 **Doğrulama:** `bash ~/klavye/test-konsole.sh` (Konsole içinde çalıştır)
 

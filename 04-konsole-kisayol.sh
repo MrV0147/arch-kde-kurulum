@@ -12,18 +12,28 @@
 #
 # MEKANIZMA (olculdu, tahmin degil):
 # Konsole 26.08 konsoleui.rc'yi diske koymuyor, Qt kaynagina gomuyor. "Yeni Sema"
-# dedigin an ~/.local/share/kxmlgui5/konsole/ altina IKI dosya yaziyor:
-#     konsoleui.rc   -> pencere duzeyi aksiyonlar (new-tab, close-window...)
-#     sessionui.rc   -> oturum duzeyi aksiyonlar (edit_copy, edit_paste...)
-# ve her ikisinin sonuna BOS bir <ActionProperties scheme="VSCode"/> koyuyor.
-# Kisayol ezmeleri iste o elemanin ICINE yaziliyor. Bu script onu dolduruyor.
+# dedigin an IKI ayri yere dosya yaziyor:
 #
-# Aksiyon adlari TAHMIN EDILMIYOR - yukaridaki dosyalardan okunuyor ve
-# yazmadan once "bu ad gercekten var mi" diye DOGRULANIYOR.
+#   1) ~/.local/share/kxmlgui5/konsole/{konsoleui,sessionui}.rc
+#      Bunlar menu yapisi. ICLERINDE TUM GERCEK AKSIYON ADLARI VAR - biz
+#      buradan okuyup dogruluyoruz. Ama kisayol yazmak icin DOGRU YER DEGIL.
+#
+#   2) ~/.local/share/konsole/shortcuts/<SemaAdi>          <-- ASIL HEDEF
+#      Ilk halinde bos: <gui><ActionProperties/></gui>
+#      KShortcutSchemesHelper semayi QStandardPaths::AppDataLocation altinda
+#      "shortcuts/<ad>" olarak arar. Konsole icin bu ~/.local/share/konsole.
+#      Kisayol ezmeleri ISTE BURAYA yazilir.
+#
+# Ve konsolerc'de [Shortcut Schemes] Current Scheme=<SemaAdi> olmali; olmazsa
+# sema hic yuklenmez.
+#
+# ONCE bunu ui.rc dosyalarina yazmayi denedik: hicbir sey olmadi, sessizce.
+# Aksiyon adlari TAHMIN EDILMIYOR - ui.rc'lerden okunup dogrulaniyor.
 
 set -uo pipefail
 KOK="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-SEMA_DIZIN="$HOME/.local/share/kxmlgui5/konsole"
+SEMA_DIZIN="$HOME/.local/share/kxmlgui5/konsole"      # aksiyon adlari burada
+SEMA_DOSYA="$HOME/.local/share/konsole/shortcuts/VSCode"  # kisayollar BURAYA
 KEYTAB_DIZIN="$HOME/.local/share/konsole"
 KEYTAB="$KEYTAB_DIZIN/VSCode.keytab"
 SEMA_ADI="VSCode"
@@ -39,7 +49,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ $KALDIR -eq 1 ]]; then
-  rm -rf "$SEMA_DIZIN" "$KEYTAB"
+  rm -rf "$SEMA_DIZIN" "$KEYTAB" "$SEMA_DOSYA"
   kwriteconfig6 --file konsolerc --group "Shortcut Schemes" --key "Current Scheme" --delete 2>/dev/null || true
   echo "kaldirildi. Konsole'u yeniden baslat."
   exit 0
@@ -65,95 +75,82 @@ EOF
   exit 2
 fi
 
-/usr/bin/python3 - "$SEMA_DIZIN" "$SEMA_ADI" "$GOSTER" <<'PYEOF'
+/usr/bin/python3 - "$SEMA_DIZIN" "$SEMA_DOSYA" "$GOSTER" <<'PYEOF'
 import json, pathlib, re, sys, datetime
 
-dizin, sema, goster = pathlib.Path(sys.argv[1]), sys.argv[2], sys.argv[3] == '1'
+dizin, sema_dosya, goster = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2]), sys.argv[3] == '1'
 
-# dosya -> [(aksiyon_adi, kisayol, insan okunur ad), ...]
-# Aksiyonun HANGI dosyada oldugu onemli: KXMLGUIFactory her istemcinin
-# ActionProperties'ini yalnizca KENDI aksiyonlarina uygular. edit_copy'yi
-# konsoleui.rc'ye yazarsan sessizce hicbir sey olmaz.
-PLAN = {
-    'sessionui.rc': [
-        # Ctrl+Ins / Shift+Ins KASTEN ekli: kisayol "fiziksel tus" degil,
-        # "o harfi ureten tus" demektir. Q -> F gecince 'c' ve 'v' harfleri
-        # yer degistiriyor (olculdu: Q'da AB03=c AB04=v, f_custom'da tam tersi).
-        # Insert tusu hicbir duzende tasinmaz -> her iki duzende de ayni yerde.
-        ('edit_copy',      'Ctrl+C;Ctrl+Ins',            'Kopyala'),
-        ('edit_paste',     'Ctrl+V;Ctrl+Shift+V;Shift+Ins', 'Yapıştır'),
-        ('select-all',     'Ctrl+A',                     'Tümünü seç'),
-        ('edit_find',      'Ctrl+F',                     'Bul'),
-        ('edit_find_next', 'F3',                         'Sonrakini bul'),
-        ('edit_find_prev', 'Shift+F3',                   'Öncekini bul'),
-        ('close-session',  'Ctrl+W',                     'Sekmeyi kapat'),
-    ],
-    'konsoleui.rc': [
-        ('new-tab',        'Ctrl+T',                     'Yeni sekme'),
-    ],
-}
+# (aksiyon_adi, kisayol, insan okunur ad)
+# Ctrl+Ins / Shift+Ins KASTEN ekli: kisayol "fiziksel tus" degil, "o harfi
+# ureten tus" demektir. Q -> F gecince 'c' ve 'v' harfleri yer degistiriyor
+# (olculdu: Q'da AB03=c AB04=v, f_custom'da tam tersi). Insert tusu hicbir
+# duzende tasinmaz -> her iki duzende de ayni yerde.
+ISTEKLER = [
+    ('edit_copy',      'Ctrl+C;Ctrl+Ins',               'Kopyala'),
+    ('edit_paste',     'Ctrl+V;Ctrl+Shift+V;Shift+Ins', 'Yapıştır'),
+    ('select-all',     'Ctrl+A',                        'Tümünü seç'),
+    ('edit_find',      'Ctrl+F',                        'Bul'),
+    ('edit_find_next', 'F3',                            'Sonrakini bul'),
+    ('edit_find_prev', 'Shift+F3',                      'Öncekini bul'),
+    ('close-session',  'Ctrl+W',                        'Sekmeyi kapat'),
+    ('new-tab',        'Ctrl+T',                        'Yeni sekme'),
+]
 
-rapor, hata = [], 0
-
-for dosya, istekler in PLAN.items():
-    p = dizin / dosya
-    metin = p.read_text(encoding='utf-8')
-
-    # 1) Aksiyon adlari gercekten bu dosyada mi? Yazmadan once dogrula.
-    mevcut = set(re.findall(r'<Action[^>]*\bname="([^"]+)"', metin))
-    gecerli = []
-    for ad, tus, insan in istekler:
-        if ad in mevcut:
-            gecerli.append((ad, tus, insan))
-        else:
-            rapor.append((dosya, ad, tus, insan, 'YOK'))
-            hata += 1
-
-    if goster or not gecerli:
-        for ad, tus, insan in gecerli:
-            rapor.append((dosya, ad, tus, insan, 'hazir'))
+# 1) Aksiyon adlarini ui.rc dosyalarindan DOGRULA (tahmin yok).
+mevcut = {}
+for rc in ('konsoleui.rc', 'sessionui.rc'):
+    p = dizin / rc
+    if not p.exists():
         continue
+    for ad in re.findall(r'<Action[^>]*\bname="([^"]+)"', p.read_text(encoding='utf-8')):
+        mevcut.setdefault(ad, rc)
 
-    # 2) <ActionProperties> blogunu kur/yenile (idempotent).
-    #
-    # SEMA ATRIBUTU KASTEN YOK. Konsole "Yeni Sema" dedigimizde
-    # <ActionProperties scheme="VSCode"/> yaziyor, AMA KXmlGui semayi ayri bir
-    # kxmlgui5/konsole/VSCode.shortcuts dosyasinda ariyor ("shortcut scheme
-    # file not found:") ve Konsole o dosyayi hic olusturmuyor. Yani semaya
-    # bagli blok kosula takilip hic uygulanmayabilir.
-    # Atributsuz <ActionProperties> KOSULSUZ uygulanir - KDE uygulamalari
-    # kullanici kisayollarini yillardir boyle saklar.
-    blok = '<ActionProperties>\n'
-    for ad, tus, _ in gecerli:
-        blok += f'  <Action name="{ad}" shortcut="{tus}"/>\n'
-    blok += ' </ActionProperties>'
-
-    # Semali ya da semasiz, eski blogun her turlusunu sok; temizini yaz.
-    yeni, n = re.subn(
-        r'<ActionProperties(?:\s[^>]*?)?\s*(?:/>|>.*?</ActionProperties>)',
-        blok, metin, flags=re.S)
-    if n == 0:
-        yeni, n = re.subn(r'</gui>', ' ' + blok + '\n</gui>', metin)
-    if n == 0:
-        rapor.append((dosya, '-', '-', 'ActionProperties yerlestirilemedi', 'HATA'))
+rapor, hata, gecerli = [], 0, []
+for ad, tus, insan in ISTEKLER:
+    if ad in mevcut:
+        gecerli.append((ad, tus, insan))
+        rapor.append((mevcut[ad], ad, tus, insan, 'hazir' if goster else 'yazildi'))
+    else:
+        rapor.append(('?', ad, tus, insan, 'AD YOK'))
         hata += 1
-        continue
 
+print(f"{'BULUNDUGU YER':<16}{'AKSIYON':<18}{'KISAYOL':<32}{'NE':<16}DURUM")
+print('-' * 96)
+for yer, ad, tus, insan, durum in rapor:
+    print(f'{yer:<16}{ad:<18}{tus:<32}{insan:<16}{durum}')
+
+if goster:
+    print(f"\nHEDEF DOSYA: {sema_dosya}")
+    sys.exit(1 if hata else 0)
+
+# 2) Sema dosyasini yaz. Tek <gui>, isimsiz -> tum istemcilere uygulanir.
+sema_dosya.parent.mkdir(parents=True, exist_ok=True)
+if sema_dosya.exists():
     damga = datetime.datetime.now().strftime('%Y%m%d-%H%M%S')
-    (dizin / f'{dosya}.oncesi-{damga}').write_text(metin, encoding='utf-8')
-    p.write_text(yeni, encoding='utf-8')
-    for ad, tus, insan in gecerli:
-        rapor.append((dosya, ad, tus, insan, 'yazildi'))
+    sema_dosya.with_name(f'{sema_dosya.name}.oncesi-{damga}').write_text(
+        sema_dosya.read_text(encoding='utf-8'), encoding='utf-8')
 
-print(f"{'DOSYA':<16}{'AKSIYON':<18}{'KISAYOL':<24}{'NE':<18}DURUM")
-print('-' * 92)
-for dosya, ad, tus, insan, durum in rapor:
-    print(f'{dosya:<16}{ad:<18}{tus:<24}{insan:<18}{durum}')
+govde = '\n'.join(f'        <Action name="{ad}" shortcut="{tus}"/>' for ad, tus, _ in gecerli)
+sema_dosya.write_text(f'<gui>\n    <ActionProperties>\n{govde}\n    </ActionProperties>\n</gui>\n',
+                      encoding='utf-8')
+print(f'\nyazildi: {sema_dosya}')
 
-if not goster:
-    kayit = [(insan, ad, tus) for _d, ad, tus, insan, durum in rapor if durum == 'yazildi']
-    (dizin / 'kesfedilen-aksiyonlar.json').write_text(
-        json.dumps(kayit, ensure_ascii=False, indent=2), encoding='utf-8')
+# 3) ui.rc'lerdeki bizim eklediklerimizi TEMIZLE. Kisayollarin yeri orasi degil;
+#    birakirsak hangi katmanin gecerli oldugu belirsizlesir.
+for rc in ('konsoleui.rc', 'sessionui.rc'):
+    p = dizin / rc
+    if not p.exists():
+        continue
+    metin = p.read_text(encoding='utf-8')
+    temiz, n = re.subn(r'<ActionProperties(?:\s[^>]*?)?\s*(?:/>|>.*?</ActionProperties>)',
+                       '<ActionProperties/>', metin, flags=re.S)
+    if n and temiz != metin:
+        p.write_text(temiz, encoding='utf-8')
+        print(f'temizlendi: {rc} (ActionProperties bosaltildi)')
+
+kayit = [(insan, ad, tus) for _y, ad, tus, insan, durum in rapor if durum == 'yazildi']
+(dizin / 'kesfedilen-aksiyonlar.json').write_text(
+    json.dumps(kayit, ensure_ascii=False, indent=2), encoding='utf-8')
 
 sys.exit(1 if hata else 0)
 PYEOF
@@ -165,13 +162,11 @@ if [[ $GOSTER -eq 1 ]]; then
   exit 0
 fi
 
-# Current Scheme SILINIYOR. Ayarli kalirsa ve o semanin .shortcuts dosyasi
-# yoksa KXmlGui kisayollari "sema varsayilanina" (yani hicbir seye) cekip
-# bizim atributsuz ActionProperties blogumuzu ezebilir.
-kwriteconfig6 --file konsolerc --group "Shortcut Schemes" --key "Current Scheme" --delete 2>/dev/null || true
+# Sema dosyasi artik DOLU, dolayisiyla Current Scheme AYARLANMALI.
+# Ayarlanmazsa KShortcutSchemesHelper semayi hic yuklemez.
+kwriteconfig6 --file konsolerc --group "Shortcut Schemes" --key "Current Scheme" "$SEMA_ADI"
 echo
-echo "konsolerc -> [Shortcut Schemes] Current Scheme temizlendi"
-echo "  (kisayollar semaya degil, ui.rc'deki kosulsuz ActionProperties'e bagli)"
+echo "konsolerc -> [Shortcut Schemes] Current Scheme=$SEMA_ADI"
 
 # ---------------------------------------------------------- SIGINT katman 2
 if [[ $KEYTAB_KUR -eq 1 ]]; then
