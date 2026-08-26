@@ -83,6 +83,7 @@ yerleşiyor. Böylece 32 harfin hepsi tam, hiçbir Q sembolü kaybolmuyor.
 | `Ctrl+Shift+C` | **SIGINT** (işlemi durdur) | — | keytab (katman 2, isteğe bağlı) | Eskiden Kopyala'ydı |
 | `Ctrl+V` | Yapıştır | `edit_paste` | `sessionui.rc` | Eskiden `Ctrl+Shift+V` |
 | `Ctrl+Shift+V` | Yapıştır (ikinci) | `edit_paste` | `sessionui.rc` | Değişmedi, eski alışkanlık korundu |
+| `Ctrl+A` | **Tümünü seç** (kaydırma tamponu) | `select-all` | `sessionui.rc` | Eskiden `Ctrl+Shift+A`. **Kayıp: `C-a` = satır başına git → yerine `Home` tuşu** |
 | `Ctrl+F` | Bul | `edit_find` | `sessionui.rc` | Eskiden `Ctrl+Shift+F`. **Kayıp:** readline `C-f` (ileri karakter) → yerine **`→` tuşu** |
 | `F3` | Sonrakini bul | `edit_find_next` | `sessionui.rc` | Eskiden `Ctrl+Shift+F3` |
 | `Shift+F3` | Öncekini bul | `edit_find_prev` | `sessionui.rc` | — |
@@ -97,17 +98,23 @@ elle atayabilirsin.
 
 **Dosyalar:**
 `~/.local/share/kxmlgui5/konsole/sessionui.rc` ve `konsoleui.rc`
-(her ikisinde `<ActionProperties scheme="VSCode">` bloğu) ·
-`~/.config/konsolerc` → `[Shortcut Schemes] Current Scheme=VSCode` ·
+(her ikisinde atribütsüz `<ActionProperties>` bloğu) ·
+`~/.config/konsolerc` → `[Shortcut Schemes] Current Scheme` **boş olmalı** ·
 `~/.local/share/konsole/VSCode.keytab` (varsa)
 
-> **Mekanizma notu:** Konsole 26.08, "Yeni Şema" dediğinde ayrı bir
-> `.shortcuts` dosyası değil, `konsoleui.rc` + `sessionui.rc` yazıyor ve
-> ikisinin sonuna **boş** bir `<ActionProperties scheme="VSCode"/>` koyuyor.
-> Kısayol ezmeleri o elemanın içine giriyor. Aksiyonun hangi dosyada olduğu
-> önemli: `KXMLGUIFactory` her istemcinin `ActionProperties`'ini yalnızca kendi
-> aksiyonlarına uygular — `edit_copy`'yi `konsoleui.rc`'ye yazarsan sessizce
-> hiçbir şey olmaz.
+> **Mekanizma notu — şema KULLANILMIYOR.** Konsole 26.08, "Yeni Şema"
+> dediğinde `konsoleui.rc` + `sessionui.rc` yazıyor ve ikisinin sonuna boş bir
+> `<ActionProperties scheme="VSCode"/>` koyuyor. Ama `KXmlGui` o şemayı ayrı
+> bir `kxmlgui5/konsole/VSCode.shortcuts` dosyasında arıyor ve Konsole onu
+> **hiç oluşturmuyor** — yani şemaya bağlı blok koşula takılıp uygulanmayabilir.
+> Bu yüzden kısayollar **atribütsüz** `<ActionProperties>` içine yazılıyor
+> (koşulsuz uygulanır) ve `konsolerc`'deki `Current Scheme` **siliniyor** —
+> ayarlı kalırsa KXmlGui kısayolları "şema varsayılanına", yani hiçbir şeye
+> çekip bizimkini ezebilir.
+>
+> Aksiyonun hangi dosyada olduğu da önemli: `KXMLGUIFactory` her istemcinin
+> `ActionProperties`'ini yalnızca kendi aksiyonlarına uygular — `edit_copy`'yi
+> `konsoleui.rc`'ye yazarsan hata bile vermez, sessizce hiçbir şey olmaz.
 
 **Doğrulama:** `bash ~/klavye/test-konsole.sh` (Konsole içinde çalıştır)
 
@@ -181,6 +188,7 @@ Q'ya al.
 |---|---|---|
 | `Ctrl+W` (bash) | Önceki kelimeyi sil | **`Alt+Backspace`** |
 | `Ctrl+F` (bash) | Bir karakter ileri | **`→` tuşu** |
+| `Ctrl+A` (bash) | Satır başına git | **`Home` tuşu** |
 | `Ctrl+T` (bash) | İki harfin yerini değiştir | — (pratikte kullanılmaz) |
 | F'nin AltGr karakterleri (`¥ ® ¶ § « »`) | F klavyenin kendi AltGr katmanı | Yok — çünkü **Q'da da yoktu**. AltGr katmanı Q'yla bire bir aynı tutuldu. |
 

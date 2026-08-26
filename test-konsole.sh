@@ -18,8 +18,14 @@ hata() { kaldi=$((kaldi+1)); printf '  \033[31m[HATA]\033[0m  %s\n' "$1"; }
 
 echo "OTOMATIK OLCUMLER"
 
-[[ "$(kreadconfig6 --file konsolerc --group 'Shortcut Schemes' --key 'Current Scheme')" == "VSCode" ]] \
-  && ok "konsolerc: sema VSCode" || hata "konsolerc: sema VSCode degil"
+# Sema KULLANILMIYOR: KXmlGui semayi ayri bir .shortcuts dosyasinda ariyor,
+# Konsole onu hic yazmiyor. Kisayollar ui.rc'deki kosulsuz ActionProperties'te.
+# Dolayisiyla "Current Scheme" ayarli OLMAMALI - ayarliysa bizimkini ezebilir.
+if [[ -z "$(kreadconfig6 --file konsolerc --group 'Shortcut Schemes' --key 'Current Scheme')" ]]; then
+  ok "konsolerc: Current Scheme bos (dogru)"
+else
+  hata "konsolerc: Current Scheme ayarli - kisayollari ezebilir"
+fi
 
 for f in konsoleui.rc sessionui.rc; do
   if [[ -f "$SEMA_DIZIN/$f" ]] && xmllint --noout "$SEMA_DIZIN/$f" 2>/dev/null; then
@@ -29,7 +35,7 @@ for f in konsoleui.rc sessionui.rc; do
   fi
 done
 
-bekle=(edit_copy edit_paste edit_find edit_find_next edit_find_prev close-session new-tab)
+bekle=(edit_copy edit_paste select-all edit_find edit_find_next edit_find_prev close-session new-tab)
 for a in "${bekle[@]}"; do
   if grep -qE "<Action name=\"$a\" shortcut=" "$SEMA_DIZIN"/*.rc 2>/dev/null; then
     tus=$(grep -hoE "<Action name=\"$a\" shortcut=\"[^\"]+\"" "$SEMA_DIZIN"/*.rc | sed 's/.*shortcut="//;s/"//')

@@ -78,6 +78,7 @@ PLAN = {
     'sessionui.rc': [
         ('edit_copy',      'Ctrl+C',                     'Kopyala'),
         ('edit_paste',     'Ctrl+V;Ctrl+Shift+V',        'Yapıştır'),
+        ('select-all',     'Ctrl+A',                     'Tümünü seç'),
         ('edit_find',      'Ctrl+F',                     'Bul'),
         ('edit_find_next', 'F3',                         'Sonrakini bul'),
         ('edit_find_prev', 'Shift+F3',                   'Öncekini bul'),
@@ -109,17 +110,25 @@ for dosya, istekler in PLAN.items():
             rapor.append((dosya, ad, tus, insan, 'hazir'))
         continue
 
-    # 2) <ActionProperties scheme="VSCode"> blogunu kur/yenile (idempotent).
-    blok = f'<ActionProperties scheme="{sema}">\n'
+    # 2) <ActionProperties> blogunu kur/yenile (idempotent).
+    #
+    # SEMA ATRIBUTU KASTEN YOK. Konsole "Yeni Sema" dedigimizde
+    # <ActionProperties scheme="VSCode"/> yaziyor, AMA KXmlGui semayi ayri bir
+    # kxmlgui5/konsole/VSCode.shortcuts dosyasinda ariyor ("shortcut scheme
+    # file not found:") ve Konsole o dosyayi hic olusturmuyor. Yani semaya
+    # bagli blok kosula takilip hic uygulanmayabilir.
+    # Atributsuz <ActionProperties> KOSULSUZ uygulanir - KDE uygulamalari
+    # kullanici kisayollarini yillardir boyle saklar.
+    blok = '<ActionProperties>\n'
     for ad, tus, _ in gecerli:
         blok += f'  <Action name="{ad}" shortcut="{tus}"/>\n'
     blok += ' </ActionProperties>'
 
+    # Semali ya da semasiz, eski blogun her turlusunu sok; temizini yaz.
     yeni, n = re.subn(
-        rf'<ActionProperties\s+scheme="{re.escape(sema)}"\s*(?:/>|>.*?</ActionProperties>)',
+        r'<ActionProperties(?:\s[^>]*?)?\s*(?:/>|>.*?</ActionProperties>)',
         blok, metin, flags=re.S)
     if n == 0:
-        # Sema elemani hic yoksa </gui> oncesine ekle
         yeni, n = re.subn(r'</gui>', ' ' + blok + '\n</gui>', metin)
     if n == 0:
         rapor.append((dosya, '-', '-', 'ActionProperties yerlestirilemedi', 'HATA'))
@@ -152,9 +161,13 @@ if [[ $GOSTER -eq 1 ]]; then
   exit 0
 fi
 
-kwriteconfig6 --file konsolerc --group "Shortcut Schemes" --key "Current Scheme" "$SEMA_ADI"
+# Current Scheme SILINIYOR. Ayarli kalirsa ve o semanin .shortcuts dosyasi
+# yoksa KXmlGui kisayollari "sema varsayilanina" (yani hicbir seye) cekip
+# bizim atributsuz ActionProperties blogumuzu ezebilir.
+kwriteconfig6 --file konsolerc --group "Shortcut Schemes" --key "Current Scheme" --delete 2>/dev/null || true
 echo
-echo "konsolerc -> [Shortcut Schemes] Current Scheme=$SEMA_ADI"
+echo "konsolerc -> [Shortcut Schemes] Current Scheme temizlendi"
+echo "  (kisayollar semaya degil, ui.rc'deki kosulsuz ActionProperties'e bagli)"
 
 # ---------------------------------------------------------- SIGINT katman 2
 if [[ $KEYTAB_KUR -eq 1 ]]; then
