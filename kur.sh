@@ -37,14 +37,21 @@ fi
 adim "FAZ 4a — tamam (iki duzen kayitli)"
 
 # ------------------------------------------------------------------ FAZ 3
-if [[ ! -f "$HOME/.local/share/kxmlgui5/konsole/VSCode.shortcuts" ]]; then
+# Konsole'un "Yeni Sema" adimi kxmlgui5/konsole/ altina konsoleui.rc ve
+# sessionui.rc yazar. VSCode.shortcuts diye bir dosya HIC olusmaz - bir tur
+# burada onu aradik ve kur.sh sonsuza kadar "once semayi olustur" dedi durdu.
+KRC="$HOME/.local/share/kxmlgui5/konsole"
+if [[ ! -f "$KRC/konsoleui.rc" || ! -f "$KRC/sessionui.rc" ]]; then
   adim "FAZ 3 — Konsole kisayollari"
   dur "Konsole -> Ayarlar -> Klavye Kisayollarini Yapilandir -> Semalari Yonet
        -> Yeni Sema -> ad: VSCode -> Kaydet"
 fi
-if [[ "$(kreadconfig6 --file konsolerc --group 'Shortcut Schemes' --key 'Current Scheme')" != "VSCode" ]]; then
+# Kisayollarin gercek yeri: ~/.local/share/konsole/shortcuts/VSCode
+SEMA="$HOME/.local/share/konsole/shortcuts/VSCode"
+if [[ ! -f "$SEMA" ]] || ! grep -q '<Action ' "$SEMA" 2>/dev/null; then
   adim "FAZ 3 — sema uygulaniyor"
   bash "$KOK/04-konsole-kisayol.sh"
+  dur "Konsole'u TAMAMEN KAPATIP yeniden ac, sonra:  bash $KOK/test-konsole.sh"
 fi
 adim "FAZ 3 — tamam"
 
@@ -52,7 +59,28 @@ adim "FAZ 3 — tamam"
 if ! grep -q 'qf-gorev-yoneticisi' "$HOME/.config/kglobalshortcutsrc" 2>/dev/null; then
   adim "FAZ 3B — global kisayol (Ctrl+Shift+Esc)"
   bash "$KOK/06-global-kisayol.sh"
+  echo
+  echo "  NOT: KWin global kisayol dosyasini izlemiyor - bu kisayol bir sonraki"
+  echo "       oturum acilisinda etkin olur."
 fi
+
+# ------------------------------------------------------------------ MASAUSTU
+# Bunlar AYRI ve istege bagli: klavye/kisayol tarafi bunlarsiz da calisir.
+# Otomatik uygulamiyoruz cunku mevcut masaustu gorunumunu degistirirler.
+adim "MASAUSTU (istege bagli)"
+cat <<EOF
+  Bu adimlar masaustu gorunumunu DEGISTIRIR, o yuzden kur.sh onlari kendiliginden
+  calistirmaz. Her birinin --goster kipi var; once onunla bak, sonra karar ver:
+
+    bash $KOK/masaustu/20-ek-bilesenler.sh --liste    # once bilesenleri kur
+    bash $KOK/masaustu/10-kwin.sh --goster            # kose eylemleri, efektler
+    bash $KOK/masaustu/30-gorunum.sh --goster         # tema, ikon, imlec, GTK
+    bash $KOK/masaustu/40-panel.sh --goster           # panel yapisi
+    bash $KOK/masaustu/60-standart-kisayollar.sh --goster
+    sudo bash $KOK/masaustu/50-giris-ekrani.sh        # SDDM (once --goster oku!)
+
+  Tam envanter:  $KOK/masaustu/ENVANTER.md
+EOF
 
 adim "HEPSI TAMAM"
 bash "$KOK/durum.sh"

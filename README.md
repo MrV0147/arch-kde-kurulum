@@ -39,8 +39,35 @@ cd ~/klavye
 bash kur.sh
 ```
 
-`kur.sh` seni sırayla yürütür ve `sudo` gereken yerde **durur, komutu verir** —
-kendisi `sudo` çalıştırmaz.
+`kur.sh` seni sırayla yürütür ve `sudo` ya da elle bir şey gereken yerde
+**durur, ne yapacağını söyler** — kendisi `sudo` çalıştırmaz.
+
+### Adım adım (kur.sh'ın izlediği sıra)
+
+| # | Adım | Kim yapar |
+|---|---|---|
+| 1 | `sudo bash 01-yedekle.sh` — yedek + giriş ekranını Q'ya sabitle | **sen** (sudo) |
+| 2 | `sudo bash 03-xkb-kur.sh` — `f_custom` varyantı + pacman hook | **sen** (sudo) |
+| 3 | `bash test-f_custom.sh` — 7 ölçüm | otomatik |
+| 4 | `bash 05-panel-widget.sh` — iki düzen kaydı + widget | otomatik |
+| 5 | Widget'ı panele ekle | **sen** (yoksa `40-panel.sh` ekler) |
+| 6 | Konsole → Ayarlar → Klavye Kısayollarını Yapılandır → **Şemaları Yönet → Yeni Şema** → ad: `VSCode` → Kaydet | **sen** (15 sn, GUI) |
+| 7 | `bash 04-konsole-kisayol.sh` — kısayolları şemaya yaz | otomatik |
+| 8 | **Konsole'u tamamen kapat, yeniden aç** | **sen** |
+| 9 | `bash test-konsole.sh` — 11 otomatik + yönlendirmeli ölçüm | otomatik |
+| 10 | `bash 06-global-kisayol.sh` — `Ctrl+Shift+Esc` | otomatik |
+| 11 | Oturumu kapat/aç — global kısayol etkin olsun | **sen** |
+| 12 | `masaustu/` scriptleri — **isteğe bağlı**, görünümü değiştirir | **sen**, `--goster` ile bakarak |
+
+**6. adım neden elle:** Konsole 26.08 menü tanımını Qt kaynağına gömüyor; aksiyon
+adları diskte yok. "Yeni Şema" dediğinde `konsoleui.rc` + `sessionui.rc` yazıyor
+ve script gerçek adları oradan **doğruluyor** — tahmin etmiyor.
+
+**8. adım neden şart:** Kısayollar uygulama açılışında okunuyor. Açık pencerede
+eskiler geçerli kalır.
+
+**11. adım neden şart:** KWin `kglobalshortcutsrc`'yi izlemiyor, başlangıçta
+okuyor.
 
 Durumu her an görmek için:
 
@@ -204,11 +231,13 @@ tek tek `masaustu/ENVANTER.md` sonundaki tabloda.
 | `uret-f_custom.sh` | XKB bloğunu derlenmiş keymap'ten üret |
 | `03-xkb-kur.sh` | Varyantı enjekte et + pacman hook |
 | `test-f_custom.sh` | 7 ölçüm — harf, AltGr, sembol denetimi |
+| `test-konsole.sh` | Konsole kısayolları: 11 otomatik + yönlendirmeli ölçüm |
 | `04-konsole-kisayol.sh` | Konsole kısayol şeması |
 | `05-panel-widget.sh` | İki düzen kaydı + widget kurulumu |
 | `06-global-kisayol.sh` | `Ctrl+Shift+Esc` vb. |
 | `uret-yardim.sh` | Widget yardım panelinin içeriği |
-| `masaustu/` | KWin ayarları, üçüncü parti bileşen listesi |
+| `masaustu/` | KWin, tema, panel, SDDM scriptleri |
+| `masaustu/ENVANTER.md` | **Tam envanter** — her özelleştirme, nerede durduğu, depoda olup olmadığı |
 
 ---
 
