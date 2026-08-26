@@ -200,13 +200,34 @@ olarak bunun üzerinden yapıldı.
 | Tuş | Ne yapar | Nerede tanımlı |
 |---|---|---|
 | `Ctrl+U` | **Yazdığın satırın tamamını sil** — imleç nerede olursa olsun | `kill-whole-line` |
-| `Shift+Delete` | Aynısı | `_qf_satir_sil` |
+| **`Delete`** | İmleç satır sonundaysa **satırı komple siler**, değilse normal karakter silme | `_qf_delete` |
+| `Alt+Delete` | Yanlışlıkla silineni **geri getirir** | `_qf_geri_al` |
+| `Shift+Delete` | Satırı komple sil (imleç nerede olursa olsun) | `_qf_satir_sil` |
 | `Ctrl+Shift+Delete` | **Panodaki metni satırdan çıkar** — yoksa satırın tamamını sil | `_qf_secili_sil` |
 | `Ctrl+Delete` | Sonraki kelimeyi sil | `kill-word` (readline varsayılanı) |
 | `↑` / `↓` | Yazdığının **başına uyan** komutları geçmişte ara | `history-search-backward/forward` |
 
-> **`Delete` tek başına satırı silmez** — normal "imleçteki karakteri sil"
-> işlevinde kalır, yoksa günlük düzenleme bozulurdu. Satırı silen `Shift+Delete`.
+### `Ctrl+A` → `Delete` akışı — nasıl çalışıyor
+
+`Delete`, readline'da **satır sonunda zaten hiçbir şey yapmaz** (sağda silinecek
+karakter yoktur). Boş duran bir tuş vuruşu. `Ctrl+A`'dan sonra imleç de tam
+orada olur. O boş yuva kullanıldı:
+
+| Durum | `Delete` ne yapar |
+|---|---|
+| İmleç **satır sonunda**, satır dolu | **Satırın tamamını siler** |
+| İmleç ortada / başta | Normal: imleçteki karakteri siler |
+| Satır boş | Hiçbir şey |
+
+Yani `Ctrl+A` → (istersen `Ctrl+C`) → `Delete` akışı çalışıyor ve **günlük
+düzenlemeden hiçbir şey kaybedilmiyor**. Yanlışlıkla silersen `Alt+Delete`
+geri getirir.
+
+> **`Backspace` neden aynı şeyi yapmıyor:** Onun boş yuvası satır *başında*,
+> ama `Ctrl+A`'dan sonra imleç *sonda* olur. Sonda `Backspace` normalde bir
+> karakter siler — oraya satır silme koyarsam günlük geri silme bozulur.
+> Ölçüldü: `\C-h` ve `\C-?` ikisi de `backward-delete-char`'a bağlı, boş
+> yuva yok. `Delete` bu işi tam olarak yapıyor.
 
 ### İstersen `Ctrl+A` tek başına silsin
 

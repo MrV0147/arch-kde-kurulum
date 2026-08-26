@@ -81,6 +81,30 @@ else
   bilgi "Klipper DBus okunamadi - pano olcumleri atlandi"
 fi
 
+# --- 6) Akilli Delete: uc senaryo, tusa basmadan ----------------------------
+echo
+echo "AKILLI DELETE — uc senaryo"
+delete_senaryo() {  # satir, imlec, beklenen_satir, aciklama
+  local S="$1" N="$2" BEK="$3" AD="$4" R
+  R="$(bash -c "source '$KURULU' 2>/dev/null
+    READLINE_LINE='$S'; READLINE_POINT=$N; _qf_delete
+    printf '%s' \"\$READLINE_LINE\"" 2>/dev/null)"
+  [[ "$R" == "$BEK" ]] && ok "$AD" || hata "$AD  (beklenen '$BEK', gelen '$R')"
+}
+delete_senaryo "abc def" 7 ""       "imlec SONDA -> satirin tamami silindi"
+delete_senaryo "abc def" 3 "abcdef" "imlec ORTADA -> tek karakter silindi (normal)"
+delete_senaryo "abc def" 0 "bc def" "imlec BASTA  -> tek karakter silindi (normal)"
+delete_senaryo ""        0 ""       "satir BOS    -> hicbir sey olmadi"
+
+# Geri alma
+R="$(bash -c "source '$KURULU' 2>/dev/null
+  READLINE_LINE='silinecek komut'; READLINE_POINT=15; _qf_delete
+  _qf_geri_al
+  printf '%s' \"\$READLINE_LINE\"" 2>/dev/null)"
+[[ "$R" == "silinecek komut" ]] \
+  && ok "Alt+Delete silineni geri getiriyor" \
+  || hata "geri alma calismadi (gelen: '$R')"
+
 echo
 echo "TUS BAGLAMALARI"
 
@@ -93,6 +117,12 @@ fi
 
 # Standart Delete dizileri: olcume gerek olmadan baglanmis olmali
 BX="$(bash -ic 'bind -X 2>/dev/null' 2>/dev/null)"
+grep -qE '"\\e\[3~"' <<<"$BX" \
+  && ok "Delete (\\e[3~) -> akilli _qf_delete" \
+  || hata "Delete akilli fonksiyona bagli degil"
+grep -q '\\e\[3;3~' <<<"$BX" \
+  && ok "Alt+Delete (\\e[3;3~) -> geri getir" \
+  || hata "Alt+Delete bagli degil"
 grep -q '\\e\[3;2~' <<<"$BX" \
   && ok "Shift+Delete (\\e[3;2~) -> satiri sil" \
   || hata "Shift+Delete bagli degil"

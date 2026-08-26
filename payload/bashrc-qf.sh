@@ -45,6 +45,38 @@ _qf_secili_sil() {
     fi
 }
 
+# --- akilli Delete: satir sonunda satiri siler ---------------------------
+# Kullanicinin akisi:  Ctrl+A (sec)  ->  [Ctrl+C]  ->  Delete
+#
+# Konsole'un secimi bash'e bildirilmiyor (DBus'ta boyle bir API yok), yani
+# "secim var mi" diye soramayiz. Ama sormaya gerek de yok: readline'da
+# Delete SATIR SONUNDA ZATEN HICBIR SEY YAPMAZ - sagda silinecek karakter
+# yoktur. Bos duran bir tus vurusu. Ctrl+A'dan sonra imlec de tam orada olur.
+#
+# Yani: imlec satirin sonundaysa ve satir bossa DEGILSE -> satiri sil.
+# Diger her durumda normal delete-char davranisi (yeniden uygulanmis hali).
+# Boylece gunluk duzenleme hic bozulmuyor, kaybedilen bir tus yok.
+_qf_delete() {
+    local n=${#READLINE_LINE}
+    if (( n > 0 && READLINE_POINT >= n )); then
+        _QF_SON_SILINEN="$READLINE_LINE"
+        READLINE_LINE=""
+        READLINE_POINT=0
+    else
+        READLINE_LINE="${READLINE_LINE:0:READLINE_POINT}${READLINE_LINE:READLINE_POINT+1}"
+    fi
+}
+
+# Yanlislikla silersen geri getir (Alt+Delete). Silinen satir _QF_SON_SILINEN'de
+# duruyor; readline'in kendi kill-ring'ine bind -x ile yazmak mumkun degil, bu
+# yuzden kendi kucuk geri almamiz var.
+_qf_geri_al() {
+    if [[ -n "${_QF_SON_SILINEN:-}" ]]; then
+        READLINE_LINE="$_QF_SON_SILINEN"
+        READLINE_POINT=${#READLINE_LINE}
+    fi
+}
+
 # --- tus baglamalari --------------------------------------------------------
 # Buradan asagisi yalnizca ETKILESIMLI kabukta calisir: 'bind' baska turlu
 # anlamsiz ve hata basiyor.
@@ -67,6 +99,8 @@ bind '"\C-u": kill-whole-line' 2>/dev/null
 # yani bu kodlama bu terminalde gecerli. Kullanilmayan bir diziyi baglamak
 # zararsiz oldugu icin bunlari dogrudan bagliyoruz - kullaniciyi olcum
 # adimina mecbur birakmiyoruz.
+bind -x '"\e[3~":   _qf_delete'      2>/dev/null   # Delete  (akilli)
+bind -x '"\e[3;3~": _qf_geri_al'    2>/dev/null   # Alt+Delete (geri getir)
 bind -x '"\e[3;2~": _qf_satir_sil'  2>/dev/null   # Shift+Delete
 bind -x '"\e[3;6~": _qf_secili_sil' 2>/dev/null   # Ctrl+Shift+Delete
 
