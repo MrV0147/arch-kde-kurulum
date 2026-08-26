@@ -91,6 +91,26 @@ else
   bilgi "tus olcumu yapilmamis -> bash $KOK/olc-tus.sh"
 fi
 
+# Standart Delete dizileri: olcume gerek olmadan baglanmis olmali
+BX="$(bash -ic 'bind -X 2>/dev/null' 2>/dev/null)"
+grep -q '\\e\[3;2~' <<<"$BX" \
+  && ok "Shift+Delete (\\e[3;2~) -> satiri sil" \
+  || hata "Shift+Delete bagli degil"
+grep -q '\\e\[3;6~' <<<"$BX" \
+  && ok "Ctrl+Shift+Delete (\\e[3;6~) -> panodakini cikar" \
+  || hata "Ctrl+Shift+Delete bagli degil"
+
+# Ctrl+A istege bagli - isaret dosyasi varsa bagli OLMALI, yoksa OLMAMALI
+if [[ -e "${XDG_STATE_HOME:-$HOME/.local/state}/qf-ctrl-a-sil" ]]; then
+  grep -q '\\C-a' <<<"$BX" \
+    && ok "Ctrl+A -> satiri sil (08-ctrl-a-sil.sh acik)" \
+    || hata "Ctrl+A acik ama bagli degil"
+else
+  grep -q '\\C-a' <<<"$BX" \
+    && hata "Ctrl+A bagli ama isaret dosyasi yok" \
+    || ok "Ctrl+A bagli degil (varsayilan - 08-ctrl-a-sil.sh ile acilir)"
+fi
+
 # bind -q / bind -X etkilesimli kabuk ister
 BAGLI="$(bash -ic 'bind -X 2>/dev/null; bind -q kill-whole-line 2>/dev/null' 2>/dev/null)"
 grep -q "_qf_satir_sil" <<<"$BAGLI" \

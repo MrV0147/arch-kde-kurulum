@@ -199,12 +199,28 @@ olarak bunun üzerinden yapıldı.
 
 | Tuş | Ne yapar | Nerede tanımlı |
 |---|---|---|
-| `Ctrl+U` | **Yazdığın satırın tamamını sil** — imleç nerede olursa olsun | `bashrc-qf.sh` → `kill-whole-line` |
-| `Shift+Delete` | Aynısı (ölçülen tuşa göre bağlanır) | `_qf_satir_sil` |
+| `Ctrl+U` | **Yazdığın satırın tamamını sil** — imleç nerede olursa olsun | `kill-whole-line` |
+| `Shift+Delete` | Aynısı | `_qf_satir_sil` |
 | `Ctrl+Shift+Delete` | **Panodaki metni satırdan çıkar** — yoksa satırın tamamını sil | `_qf_secili_sil` |
-| `Ctrl+Backspace` | Önceki kelimeyi sil | `backward-kill-word` |
-| `Ctrl+Delete` | Sonraki kelimeyi sil | `kill-word` |
+| `Ctrl+Delete` | Sonraki kelimeyi sil | `kill-word` (readline varsayılanı) |
 | `↑` / `↓` | Yazdığının **başına uyan** komutları geçmişte ara | `history-search-backward/forward` |
+
+> **`Delete` tek başına satırı silmez** — normal "imleçteki karakteri sil"
+> işlevinde kalır, yoksa günlük düzenleme bozulurdu. Satırı silen `Shift+Delete`.
+
+### İstersen `Ctrl+A` tek başına silsin
+
+```bash
+bash ~/klavye/08-ctrl-a-sil.sh          # aç
+bash ~/klavye/08-ctrl-a-sil.sh --kaldir # geri al
+```
+
+Açtığında `Ctrl+A` → **yazdığın satırın tamamını siler** (tek tuş), Konsole'un
+"tümünü seç"i `Ctrl+Shift+A`'ya taşınır. **Varsayılan değil**, çünkü `Ctrl+A`'nın
+seçme işlevini kaybetmek bir tercih meselesi.
+
+`Ctrl+A` düzenden bağımsızdır: `QF_CTRL_ALPHABETIC` sayesinde F düzeninde de
+Q'nun `A` tuşunda kalır.
 
 **"Seç → sil" akışı:** bir parçayı fareyle seç → `Ctrl+C` (kopyala) →
 `Ctrl+Shift+Delete`. Panodaki metin satırda geçiyorsa **yalnızca o parça**

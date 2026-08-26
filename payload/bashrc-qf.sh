@@ -59,6 +59,24 @@ _qf_tuslar="${XDG_STATE_HOME:-$HOME/.local/state}/qf-tuslar.conf"
 # imlecin yerinden bagimsiz olarak satirin tamamini siler.
 bind '"\C-u": kill-whole-line' 2>/dev/null
 
+# STANDART DIZILER — olcume gerek yok.
+# Delete tusu \e[3~ gonderir; degistiricili halleri xterm kodlamasiyla:
+#     Shift       \e[3;2~        Ctrl        \e[3;5~
+#     Alt         \e[3;3~        Ctrl+Shift  \e[3;6~
+# Konsole xterm uyumlu. Olculdu: \e[3;5~ zaten readline'da kill-word'e bagli,
+# yani bu kodlama bu terminalde gecerli. Kullanilmayan bir diziyi baglamak
+# zararsiz oldugu icin bunlari dogrudan bagliyoruz - kullaniciyi olcum
+# adimina mecbur birakmiyoruz.
+bind -x '"\e[3;2~": _qf_satir_sil'  2>/dev/null   # Shift+Delete
+bind -x '"\e[3;6~": _qf_secili_sil' 2>/dev/null   # Ctrl+Shift+Delete
+
+# Ctrl+A ile satir silme - yalnizca 08-ctrl-a-sil.sh acmissa.
+# Varsayilan DEGIL: acildiginda Konsole'un "tumunu sec"i Ctrl+Shift+A'ya
+# taşınıyor ve bu bir tercih meselesi.
+if [[ -e "${XDG_STATE_HOME:-$HOME/.local/state}/qf-ctrl-a-sil" ]]; then
+    bind -x '"\C-a": _qf_satir_sil' 2>/dev/null
+fi
+
 if [[ -r "$_qf_tuslar" ]]; then
     while IFS='=' read -r _ad _dizi; do
         [[ -z "${_ad:-}" || -z "${_dizi:-}" ]] && continue

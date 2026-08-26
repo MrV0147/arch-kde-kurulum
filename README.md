@@ -257,7 +257,8 @@ tek tek `masaustu/ENVANTER.md` sonundaki tabloda.
 | `test-klavye-ctrl.sh` | F düzeninde Ctrl konumları: 4 otomatik + canlı tuş ölçümü |
 | `olc-tus.sh` | Bir tuşun gönderdiği baytları ölçer (tahmin yerine) |
 | `07-satir-sil.sh` | Satır düzenleme kısayollarını kurar (`.bashrc` + `bind -x`) |
-| `test-satir-sil.sh` | Satır silme: 6 ölçüm, ikisi tuşa basmadan |
+| `test-satir-sil.sh` | Satır silme: 10 ölçüm, ikisi tuşa basmadan |
+| `08-ctrl-a-sil.sh` | İsteğe bağlı: `Ctrl+A` = satırı komple sil |
 | `payload/bashrc-qf.sh` | `_qf_satir_sil` / `_qf_secili_sil` + tuş bağlamaları |
 | `04-konsole-kisayol.sh` | Konsole kısayol şeması |
 | `05-panel-widget.sh` | İki düzen kaydı + widget kurulumu |
