@@ -40,6 +40,13 @@ fi
 
 # --- 2) KWin canli keymap'i f_custom iceriyor mu -------------------------
 CANLI="$(WAYLAND_DEBUG=1 timeout 5 xkbcli interactive-wayland --verbose 2>&1 || true)"
+# timeout ile oldurulen xkbcli bazen artakaliyor ve SONRAKI calistirmada
+# Wayland baglantisini bozuyor (olculdu: kullanici Ctrl+C'leyince kalan
+# surec yuzunden "canli keymap okunamadi" hatasi alindi). Temizle.
+# KALIP ANKRAJLI: ankrajsiz "pkill -f xkbcli-interactive-wayland"
+# cagiran kabugu de oldurdu, cunku onun komut satiri da o dizgeyi
+# iceriyordu. Tam yol + ^$ ile yalnizca gercek surec eslesir.
+pkill -f '^/usr/lib/xkbcommon/xkbcli-interactive-wayland$' 2>/dev/null || true
 SEMBOL="$(grep -m1 'Compiling xkb_symbols' <<<"$CANLI")"
 if [[ -z "$SEMBOL" ]]; then
   bilgi "KWin canli keymap'i okunamadi (Wayland oturumu disinda misin?)"
@@ -86,55 +93,102 @@ echo
 echo "SONUC (otomatik): $gecti gecti, $kaldi kaldi"
 
 # ------------------------------------------------------------------------
-# CANLI TUS OLCUMU — asil kanit
+# CANLI TUS OLCUMU — asil kanit, DOGRUDAN TERMINALDE
+#
+# Onceki surum ayri bir pencere (xkbcli interactive-wayland) actiriyordu:
+# kullanicinin pencereye tiklamasi gerekiyordu, Ctrl+C scripti olduruyordu ve
+# artik kalan surec sonraki calistirmayi bozuyordu. Uc ayri kirilma noktasi.
+#
+# Bunun yerine bayti DOGRUDAN bu terminalde olcuyoruz. Puf nokta: stty -isig.
+# Normalde 0x03 (Ctrl+C) cekirdek tarafindan SIGINT'e cevrilir ve script oldur;
+# -isig bunu kapatinca 0x03 sira bir bayt olarak read'e duser.
+#
+#   Ctrl+C  -> 0x03      Ctrl+V  -> 0x16
+#
+# F duzeninde Q'nun C tusuna Ctrl ile basildiginda:
+#   0x03 gelirse -> Ctrl seviyesi CALISIYOR (tus Q konumunda kaldi)
+#   0x16 gelirse -> calismiyor (tus F harfini uretti)
 # ------------------------------------------------------------------------
+
+if [[ ! -t 0 ]]; then
+  echo
+  echo "  NOT: canli tus olcumu gercek bir terminal ister."
+  echo "  Konsole'da calistir:  bash $KOK/test-klavye-ctrl.sh"
+  echo
+  echo "TOPLAM: $gecti gecti, $kaldi kaldi"
+  exit $(( kaldi > 0 ))
+fi
+
+STTY_ESKI="$(stty -g)"
+geri_al() { stty "$STTY_ESKI" 2>/dev/null; }
+trap 'geri_al; echo; echo "(iptal edildi)"; exit 130' INT
+trap geri_al EXIT
+
+# Tek bayt okur; -isig kapali oldugu icin Ctrl+C bile sinyal degil bayt olarak gelir
+olc_bayt() {
+  local c
+  stty -isig -icanon -echo min 1 time 0
+  IFS= read -rsn1 c
+  stty "$STTY_ESKI"
+  printf '%02x' "'$c" 2>/dev/null
+}
+
+ad_bayt() {
+  case "$1" in
+    03) echo "0x03  Ctrl+C" ;;
+    16) echo "0x16  Ctrl+V" ;;
+    0d|0a) echo "Enter" ;;
+    *) echo "0x$1" ;;
+  esac
+}
+
 cat <<'EOF'
 
 ===========================================================================
-CANLI TUS OLCUMU  (asil kanit - 20 saniye)
+CANLI TUS OLCUMU  (asil kanit)
 
-Yukaridaki olcumler keymap'in YAPISINI dogruluyor. Asagidaki ise KWin'in
-tusa BASILDIGINDA gercekten ne urettigini olcuyor.
-
-Simdi kucuk bir pencere acilacak. Yapacaklarin:
-
-  1. Panel dugmesinden duzeni  F  yap
-  2. Acilan pencereye TIKLA (odak almasi icin)
-  3. Ctrl'u basili tutup, klavyende  C  YAZAN tusa bas
-  4. Esc ile pencereyi kapat
-
-BEKLENEN: "keysym [ c ]" ve modifier listesinde Control
-YANLIS   : "keysym [ v ]"  -> Ctrl seviyesi devrede degil
+Ayri pencere yok, tiklama yok. Tusa BU terminalde basacaksin.
+Ctrl+C bu olcum sirasinda scripti OLDURMEZ - bayt olarak okunur.
 ===========================================================================
 EOF
-read -r -p "Hazirsan Enter... " _ || true
 
-LOG="$(mktemp)"
-timeout 60 xkbcli interactive-wayland > "$LOG" 2>&1 || true
-
+# --- A) Q duzeninde kontrol olcumu ---------------------------------------
 echo
-echo "OLCUM SONUCU"
-BASIM="$(grep -iE "keysym" "$LOG" | grep -viE "keysym \[ *(Control|Shift|Alt|Super|Escape)" | head -5)"
-if [[ -z "$BASIM" ]]; then
-  bilgi "hicbir tus basimi kaydedilmedi (pencereye tiklamayi unutmus olabilirsin)"
+echo "A) Once Q duzeninde (kontrol olcumu)"
+echo "   Panel dugmesi  Q  gostersin. Sonra Ctrl basili tutup C tusuna bas."
+read -r -p "   Hazirsan Enter... " _ || true
+printf "   basiliyor: "
+B="$(olc_bayt)"
+echo "$(ad_bayt "$B")"
+if [[ "$B" == "03" ]]; then
+  ok "Q duzeni: Ctrl+C -> 0x03  (beklenen)"
 else
-  echo "$BASIM" | sed 's/^/    /'
-  echo
-  if grep -qiE "keysym \[ *c *\]" <<<"$BASIM"; then
-    ok "keysym 'c' uretildi -> Ctrl seviyesi CALISIYOR"
-    grep -qi "Control" <<<"$BASIM" \
-      && ok "Control modifier'i da iletiliyor (preserve calisiyor)" \
-      || hata "Control modifier'i GORUNMUYOR - preserve[] devrede degil"
-  elif grep -qiE "keysym \[ *v *\]" <<<"$BASIM"; then
-    hata "keysym 'v' uretildi -> Ctrl seviyesi DEVREDE DEGIL"
-    echo "         Once:  bash $KOK/yenile-keymap.sh"
-    echo "         Sonra da olmazsa oturumu kapatip ac."
-  else
-    bilgi "beklenen c/v disinda bir keysym geldi - yanlis tusa basmis olabilirsin"
-  fi
+  hata "Q duzeni: 0x03 bekleniyordu, $(ad_bayt "$B") geldi"
 fi
-rm -f "$LOG"
 
+# --- B) F duzeninde asil olcum -------------------------------------------
+echo
+echo "B) Simdi F duzenine gec (panel dugmesine tikla)"
+echo "   Sonra yine Ctrl basili tutup, uzerinde  C  YAZAN tusa bas."
+read -r -p "   F duzenine gectiysen Enter... " _ || true
+printf "   basiliyor: "
+B="$(olc_bayt)"
+echo "$(ad_bayt "$B")"
+echo
+if [[ "$B" == "03" ]]; then
+  ok "F duzeni: Ctrl+C -> 0x03  ->  CTRL SEVIYESI CALISIYOR"
+  echo "         Kisayollar iki duzende de ayni fiziksel tusta."
+elif [[ "$B" == "16" ]]; then
+  hata "F duzeni: 0x16 (Ctrl+V) geldi -> Ctrl seviyesi DEVREDE DEGIL"
+  echo "         KWin hala eski keymap'i kullaniyor. Sirasiyla:"
+  echo "           bash $KOK/yenile-keymap.sh"
+  echo "           bu testi tekrar calistir"
+  echo "         Yine olmazsa oturumu kapatip ac."
+else
+  bilgi "beklenen 0x03/0x16 disinda: $(ad_bayt "$B") - yanlis tusa basmis olabilirsin"
+fi
+
+geri_al
 echo
 echo "TOPLAM: $gecti gecti, $kaldi kaldi"
 exit $(( kaldi > 0 ))

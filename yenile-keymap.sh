@@ -37,6 +37,7 @@ canli_boyut() {
   WAYLAND_DEBUG=1 timeout 5 xkbcli interactive-wayland 2>&1 \
     | grep -oE 'keymap\([0-9]+, fd [0-9]+, [0-9]+\)' \
     | grep -oE '[0-9]+\)$' | tr -d ')' | head -1
+  pkill -f '^/usr/lib/xkbcommon/xkbcli-interactive-wayland$' 2>/dev/null || true
 }
 
 ONCE="$(kreadconfig6 --file kxkbrc --group Layout --key LayoutList)"
@@ -61,6 +62,13 @@ sleep 2
 
 # --------------------------------------------------------------- dogrulama
 CIKTI="$(WAYLAND_DEBUG=1 timeout 5 xkbcli interactive-wayland --verbose 2>&1)"
+# timeout ile oldurulen xkbcli bazen artakaliyor ve SONRAKI calistirmada
+# Wayland baglantisini bozuyor (olculdu: kullanici Ctrl+C'leyince kalan
+# surec yuzunden "canli keymap okunamadi" hatasi alindi). Temizle.
+# KALIP ANKRAJLI: ankrajsiz "pkill -f xkbcli-interactive-wayland"
+# cagiran kabugu de oldurdu, cunku onun komut satiri da o dizgeyi
+# iceriyordu. Tam yol + ^$ ile yalnizca gercek surec eslesir.
+pkill -f '^/usr/lib/xkbcommon/xkbcli-interactive-wayland$' 2>/dev/null || true
 CANLI_SEMBOL="$(grep -m1 'Compiling xkb_symbols' <<<"$CIKTI")"
 BOYUT_SONRA="$(grep -oE 'keymap\([0-9]+, fd [0-9]+, [0-9]+\)' <<<"$CIKTI" \
                | grep -oE '[0-9]+\)$' | tr -d ')' | head -1)"
