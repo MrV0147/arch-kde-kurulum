@@ -24,8 +24,15 @@ BILESENLER=(
   "Scratchy (tema + genel gorunum)|tema|GPL-3+/LGPL|https://seduccionlinux.wordpress.com"
   "Smart Video Wallpaper Reborn|duvarkagidi|GPL-3.0|https://github.com/luisbocanegra/plasma-smart-video-wallpaper-reborn"
   "Panel Colorizer|plasmoid|GPL-3.0|https://github.com/luisbocanegra/plasma-panel-colorizer"
-  "Darkly (pencere dekorasyonu)|dekorasyon|GPL|https://github.com/Bali10050/Darkly"
+  "Darkly (widget stili + dekorasyon)|paket|GPL|AUR: darkly-bin"
+  "Papirus-Dark (simge teması)|paket|GPL-3.0|pacman: papirus-icon-theme"
+  "Bibata-Modern-Ice (imleç)|paket|GPL-3.0|AUR: bibata-cursor-theme"
+  "Noto Sans (yazı tipi)|paket|OFL|pacman: noto-fonts"
 )
+
+# Depo paketiyle gelenler - tek komutla:
+#   sudo pacman -S papirus-icon-theme noto-fonts
+#   AUR (yay/paru):  darkly-bin bibata-cursor-theme
 
 echo "Bu masaustu kurulumunun kullandigi ucuncu parti bilesenler:"
 echo

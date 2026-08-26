@@ -141,16 +141,45 @@ kullanılıyor, `layoutChanged` sinyali harfi anında güncelliyor. Poll yok,
 Sağ tık panelinin içeriği QML'e gömülü değil — `uret-yardim.sh` onu **canlı
 sistemden** üretir. Bir kısayolu değiştirdiğinde panel yalan söylemez.
 
-### 5 — Masaüstü (`masaustu/`)
+### 5 — Masaüstünün tamamı (`masaustu/`)
+
+Açılış ekranından panel bileşenlerine kadar. **Her scriptin `--goster` kipi var**
+— hiçbir şey yazmadan ne yapacağını anlatır:
 
 ```bash
-bash masaustu/10-kwin.sh --goster        # ne değişecek, yazmadan gör
-bash masaustu/20-ek-bilesenler.sh --liste
+bash masaustu/10-kwin.sh --goster              # köşe eylemleri, efektler, Alt+Tab
+bash masaustu/30-gorunum.sh --goster           # tema, renk, ikon, imleç, GTK
+bash masaustu/40-panel.sh --goster             # panel + masaüstü yapısı
+bash masaustu/50-giris-ekrani.sh --goster      # SDDM, kilit ekranı, plymouth
+bash masaustu/60-standart-kisayollar.sh --goster
+bash masaustu/20-ek-bilesenler.sh --liste      # üçüncü parti bileşen kaynakları
 ```
 
-Köşe eylemleri, efektler, `Alt+Tab` görünümü, pencere davranışları.
+| Dosya | Ne kurar |
+|---|---|
+| `10-kwin.sh` | Köşe eylemleri (sol üst Genel Görünüm, sağ üst Başlatıcı, sol alt Masaüstü, sağ alt Kilit), efektler, `coverswitch` Alt+Tab, orta tık yapıştırmayı kapatma |
+| `20-ek-bilesenler.sh` | Üçüncü parti tema/plasmoid/paket listesi — lisans ve kaynaklarıyla |
+| `30-gorunum.sh` | Lucy renk şeması (sarı vurgu), Papirus-Dark, Bibata imleç, Darkly, GTK 3/4 uyumu. Önce "kurulu mu" diye **bakar**, eksiği söyler |
+| `40-panel.sh` | Panelleri Plasma'nın kendi betik API'siyle kurar — idempotent, `appletsrc`'ye elle dokunmaz |
+| `50-giris-ekrani.sh` | SDDM Wayland greeter + kilit ekranı |
+| `60-standart-kisayollar.sh` | KDE uygulama geneli kısayolları (`Redo=Ctrl+R` takası) |
+| `panel-colorizer-ayarlari.json` | Panel Colorizer ayarları (bileşenin kendi içe aktarma penceresinden) |
+| **`ENVANTER.md`** | **Tam envanter** — her özelleştirme, hangi dosyada durduğu, depoda olup olmadığı ve yoksa nedeni |
+
+> `50-giris-ekrani.sh` deponun en pahalı öğrenilmiş parçası. SDDM'yi Wayland
+> greeter'a alıyor (çift monitörde giriş formunun iki kez çıkması + X11
+> greeter'ın ardında bıraktığı Xorg sürecinin `:0`'ı tutması). **Uyarı:** paket
+> varsayılanı `CompositorCommand=weston` ve weston kurulu olmayabilir; sadece
+> `DisplayServer=wayland` yazıp bunu ezmezsen boot loop olur. Script ikisini
+> birlikte yazıyor ve `kwin_wayland` yoksa çalışmayı reddediyor.
+
 Üçüncü parti tema/plasmoid'ler **depoya kopyalanmadı** — hepsinin kendi lisansı
-var, `20-ek-bilesenler.sh` kaynaklarını listeliyor.
+var (GPL-3.0, LGPL, MIT), yalnızca kaynakları listeleniyor.
+
+**Kişisel olan hiçbir şey depoda yok:** görev çubuğu başlatıcıları, uygulama
+menüsü favorileri, hava durumu konumu, duvar kâğıdı dosya yolu, KDE Connect
+cihazı, ekran/etkinlik UUID'leri, dokunmatik yüzey aygıt kimlikleri. Gerekçeleri
+tek tek `masaustu/ENVANTER.md` sonundaki tabloda.
 
 ---
 
