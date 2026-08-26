@@ -69,7 +69,10 @@ fi
 baslik "KONSOLE"
 sema="$(kreadconfig6 --file konsolerc --group "Shortcut Schemes" --key "Current Scheme")"
 y "kisayol semasi" "${sema:-(varsayilan)}"
-y "sema dosyasi" "$(var "$HOME/.local/share/kxmlgui5/konsole/VSCode.shortcuts")"
+# Sema dosyasi kxmlgui5 altinda DEGIL: KShortcutSchemesHelper onu
+# AppDataLocation/shortcuts/<ad> yolunda ariyor -> ~/.local/share/konsole/shortcuts/
+SD="$HOME/.local/share/konsole/shortcuts/$( kreadconfig6 --file konsolerc --group 'Shortcut Schemes' --key 'Current Scheme' )"
+y "sema dosyasi" "$([[ -f "$SD" ]] && echo "VAR ($(grep -c '<Action ' "$SD") kisayol)" || echo "yok")"
 if [[ -f "$HOME/.local/share/kxmlgui5/konsole/kesfedilen-aksiyonlar.json" ]]; then
   /usr/bin/python3 -c "
 import json,sys
