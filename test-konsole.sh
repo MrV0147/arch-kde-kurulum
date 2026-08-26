@@ -43,6 +43,45 @@ for a in "${bekle[@]}"; do
   fi
 done
 
+# --- AYIRICI DENETIMI -------------------------------------------------------
+# Bu testi bir hata ogretti: "Ctrl+C;Ctrl+Ins" (bosluksuz) yazinca Qt tum
+# dizgeyi tek kombinasyon sanip ayristiramiyor ve aksiyona BOS kisayol
+# veriyor - sessizce. Ctrl+A tek kisayol oldugu icin calisiyordu, Ctrl+C
+# calismiyordu. Ayirici "; " olmali (noktali virgul + BOSLUK).
+# Burada dizgeleri Qt'nin KENDISINE ayristirtip bos cikan var mi diye bakiyoruz.
+QTPY=""
+for c in /home/*/jarvis/JARVIS/venv/bin/python "$HOME/jarvis/JARVIS/venv/bin/python"; do
+  [[ -x "$c" ]] && "$c" -c "import PySide6" 2>/dev/null && { QTPY="$c"; break; }
+done
+
+if [[ -n "$QTPY" ]]; then
+  SONUC="$("$QTPY" - "$SEMA_DOSYA" <<'PYEOF'
+import re, sys
+from PySide6.QtGui import QKeySequence
+metin = open(sys.argv[1], encoding='utf-8').read()
+kotu = []
+for ad, dizge in re.findall(r'name="([^"]+)" shortcut="([^"]*)"', metin):
+    diziler = QKeySequence.listFromString(dizge)
+    if not diziler or any(q.toString() == '' for q in diziler):
+        kotu.append(f'{ad} -> {dizge!r}')
+print('\n'.join(kotu) if kotu else 'TEMIZ')
+PYEOF
+)"
+  if [[ "$SONUC" == "TEMIZ" ]]; then
+    ok "tum kisayol dizgeleri Qt tarafindan ayristirilabiliyor"
+  else
+    hata "Qt bu dizgeleri ayristiramiyor (bos kisayol olusur):"
+    echo "$SONUC" | sed 's/^/           /'
+  fi
+else
+  # PySide6 yoksa en azindan ayirici bicimini denetle
+  if grep -qE 'shortcut="[^"]*;[^ ]' "$SEMA_DOSYA" 2>/dev/null; then
+    hata "ayirici hatali: ';' sonrasi BOSLUK yok -> Qt bos kisayol uretir"
+  else
+    ok "ayirici bicimi dogru ('; ')"
+  fi
+fi
+
 # ---------------------------------------------------------------- DUZEN BILGISI
 # Kisayol "fiziksel tus" degil, "o harfi ureten tus" demektir. Duzen degisince
 # o tus tasinir. Kullaniciya SU AN hangi tusa basmasi gerektigini soyleyelim.

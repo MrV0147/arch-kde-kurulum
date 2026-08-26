@@ -121,6 +121,20 @@ elle atayabilirsin.
 > Ayrıca `konsolerc` → `[Shortcut Schemes] Current Scheme=VSCode` **ayarlı
 > olmalı**; ayarlı değilse şema hiç yüklenmez.
 
+> **Ayırıcı tuzağı — bir kısayola iki tuş verirken.** Qt'nin
+> `QKeySequence::listFromString` ayırıcısı `"; "` — noktalı virgül **artı
+> boşluk**. Boşluğu koymazsan Qt tüm dizgeyi tek kombinasyon sanıp
+> ayrıştıramaz ve aksiyona **boş** kısayol verir; hata da vermez. Ölçüldü:
+>
+> ```
+> "Ctrl+C;Ctrl+Ins"   ->  1 adet  ['']                      boş
+> "Ctrl+C; Ctrl+Ins"  ->  2 adet  ['Ctrl+C', 'Ctrl+Ins']    doğru
+> ```
+>
+> Bu yüzden bir tur `Ctrl+A` çalışırken (tek kısayol, ayırıcı yok) `Ctrl+C`
+> hiçbir şey yapmıyordu. `test-konsole.sh` artık dizgeleri Qt'nin kendisine
+> ayrıştırtıp boş çıkanı yakalıyor.
+
 **Doğrulama:** `bash ~/klavye/test-konsole.sh` (Konsole içinde çalıştır)
 
 ### ⚠️ Kısayollar düzene bağlı — `C` ve `V` yer değiştiriyor

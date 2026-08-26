@@ -85,16 +85,27 @@ dizin, sema_dosya, goster = pathlib.Path(sys.argv[1]), pathlib.Path(sys.argv[2])
 # ureten tus" demektir. Q -> F gecince 'c' ve 'v' harfleri yer degistiriyor
 # (olculdu: Q'da AB03=c AB04=v, f_custom'da tam tersi). Insert tusu hicbir
 # duzende tasinmaz -> her iki duzende de ayni yerde.
+# Kisayollar LISTE olarak tutuluyor ve AYIRICI tek yerde uygulanıyor.
+#
+# NEDEN: Qt'nin QKeySequence::listFromString ayiricisi "; " - noktali virgul
+# ARTI BOSLUK. Boslugu koymazsan Qt tum dizgeyi tek bir kombinasyon sanip
+# ayristiramiyor ve aksiyona BOS kisayol veriyor. Olculdu (PySide6 ile):
+#     "Ctrl+C;Ctrl+Ins"   -> 1 adet ['']            <- kisayol yok olur
+#     "Ctrl+C; Ctrl+Ins"  -> 2 adet ['Ctrl+C','Ctrl+Ins']
+# Tam da bu yuzden Ctrl+A calisirken (tek kisayol, ayirici yok) Ctrl+C
+# hicbir sey yapmiyordu. Listeyi burada birlestirerek hata tekrarlanamaz.
+AYIRICI = '; '
 ISTEKLER = [
-    ('edit_copy',      'Ctrl+C;Ctrl+Ins',               'Kopyala'),
-    ('edit_paste',     'Ctrl+V;Ctrl+Shift+V;Shift+Ins', 'Yapıştır'),
-    ('select-all',     'Ctrl+A',                        'Tümünü seç'),
-    ('edit_find',      'Ctrl+F',                        'Bul'),
-    ('edit_find_next', 'F3',                            'Sonrakini bul'),
-    ('edit_find_prev', 'Shift+F3',                      'Öncekini bul'),
-    ('close-session',  'Ctrl+W',                        'Sekmeyi kapat'),
-    ('new-tab',        'Ctrl+T',                        'Yeni sekme'),
+    ('edit_copy',      ['Ctrl+C', 'Ctrl+Ins'],                    'Kopyala'),
+    ('edit_paste',     ['Ctrl+V', 'Ctrl+Shift+V', 'Shift+Ins'],   'Yapıştır'),
+    ('select-all',     ['Ctrl+A'],                                'Tümünü seç'),
+    ('edit_find',      ['Ctrl+F'],                                'Bul'),
+    ('edit_find_next', ['F3'],                                    'Sonrakini bul'),
+    ('edit_find_prev', ['Shift+F3'],                              'Öncekini bul'),
+    ('close-session',  ['Ctrl+W'],                                'Sekmeyi kapat'),
+    ('new-tab',        ['Ctrl+T'],                                'Yeni sekme'),
 ]
+ISTEKLER = [(ad, AYIRICI.join(tuslar), insan) for ad, tuslar, insan in ISTEKLER]
 
 # 1) Aksiyon adlarini ui.rc dosyalarindan DOGRULA (tahmin yok).
 mevcut = {}
