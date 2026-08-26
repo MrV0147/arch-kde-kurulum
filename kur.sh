@@ -64,6 +64,17 @@ if ! grep -q 'qf-gorev-yoneticisi' "$HOME/.config/kglobalshortcutsrc" 2>/dev/nul
   echo "       oturum acilisinda etkin olur."
 fi
 
+# ------------------------------------------------------------- SATIR DUZENLEME
+if ! grep -q "qf-klavye satir duzenleme" "$HOME/.bashrc" 2>/dev/null; then
+  adim "SATIR DUZENLEME — yazdigini tek hamlede silmek"
+  bash "$KOK/07-satir-sil.sh"
+  echo
+  echo "  Ctrl+U ve gecmis aramasi hemen calisir."
+  echo "  Shift+Delete gibi tuslar icin dizilerini OLCMEK gerekiyor:"
+  dur "bash $KOK/olc-tus.sh     (gercek bir terminalde, 4 tusa basacaksin)"
+fi
+adim "SATIR DUZENLEME — tamam"
+
 # ------------------------------------------------------------------ MASAUSTU
 # Bunlar AYRI ve istege bagli: klavye/kisayol tarafi bunlarsiz da calisir.
 # Otomatik uygulamiyoruz cunku mevcut masaustu gorunumunu degistirirler.
@@ -80,6 +91,10 @@ cat <<EOF
     sudo bash $KOK/masaustu/50-giris-ekrani.sh        # SDDM (once --goster oku!)
 
   Tam envanter:  $KOK/masaustu/ENVANTER.md
+
+  Kalan iki olcum (elle, kisa):
+    bash $KOK/test-klavye-ctrl.sh    # F duzeninde Ctrl konumlari, canli tus
+    bash $KOK/test-satir-sil.sh      # satir silme
 EOF
 
 adim "HEPSI TAMAM"
