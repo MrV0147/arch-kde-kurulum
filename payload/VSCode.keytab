@@ -1,0 +1,70 @@
+# [VSCode.keytab] Konsole Keyboard Table
+# ---------------------------------------------------------------------------
+# SIGINT KATMAN 2 — sadece katman 1 (secim-gecisi) olcumu duserse kurulur.
+#
+# Ctrl+C artik "Kopyala" aksiyonuna bagli. Bu tablo Ctrl+Shift+C'nin 0x03 (ETX)
+# baytini gondermesini saglar -> calisan islem SIGINT alir.
+#
+# NEDEN stty DEGIL: `stty intr` ile Ctrl+Shift+C ATANAMAZ. Terminal, Ctrl+C ve
+# Ctrl+Shift+C icin ayni bayti (0x03) gonderir; Shift bilgisi kontrol karakteri
+# protokolunde yoktur. `stty intr` tek bayt alir, tus kombinasyonu degil.
+# Bu yuzden cozum terminal emulatorunun kendi tus katmaninda.
+#
+# DIKKAT: Konsole'un varsayilan tablosu C++'ta gomulu; keytab'lar katmanli
+# degildir. Bu dosya secildiginde ASAGIDAKI TUM tanimlar gecerli olur ve
+# burada olmayan hicbir ozel tus varsayilana DUSMEZ. Bu yuzden varsayilan
+# tablonun tamami asagida yeniden uretilmistir; en altta tek satir bizim.
+# ---------------------------------------------------------------------------
+keyboard "VSCode"
+
+key Escape         : "\E"
+key Tab            : "\t"
+key Return-Alt     : "\r"
+key Return+Alt     : "\E\r"
+
+# Backspace/Delete: CTRL-H korunur
+key Backspace      : "\x08"
+
+# imlec tuslari
+key Up    -Shift   : "\EOA"
+key Down  -Shift   : "\EOB"
+key Right -Shift   : "\EOC"
+key Left  -Shift   : "\EOD"
+
+# gri PC tuslari
+key Enter          : "\r"
+key Home           : "\E[1~"
+key Insert-Shift   : "\E[2~"
+key Delete         : "\E[3~"
+key End            : "\E[4~"
+key PgUp  -Shift   : "\E[5~"
+key PgDown-Shift   : "\E[6~"
+
+# islev tuslari
+key F1             : "\E[11~"
+key F2             : "\E[12~"
+key F3             : "\E[13~"
+key F4             : "\E[14~"
+key F5             : "\E[15~"
+key F6             : "\E[17~"
+key F7             : "\E[18~"
+key F8             : "\E[19~"
+key F9             : "\E[20~"
+key F10            : "\E[21~"
+key F11            : "\E[23~"
+key F12            : "\E[24~"
+
+# olu tuslari atlatma
+key Space +Control : "\x00"
+
+# gecmis tamponu islemleri
+key Up      +Shift        : scrollLineUp
+key PgUp    +Shift-Ctrl   : scrollPageUp
+key PgUp    +Shift+Ctrl   : scrollPromptUp
+key Down    +Shift        : scrollLineDown
+key PgDown  +Shift-Ctrl   : scrollPageDown
+key PgDown  +Shift+Ctrl   : scrollPromptDown
+
+# ---------------------------------------------------------------------------
+# TEK EKLEME: Ctrl+Shift+C -> 0x03 (ETX) -> SIGINT
+key C       +Ctrl +Shift  : "\x03"

@@ -1,0 +1,20 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "MrV0147"
+            }
+        ],
+        "Category": "Utilities",
+        "Description": "Q ve F klavye düzeni arasında tek tıkla geçiş; sağ tıkla kısayol listesi",
+        "EnabledByDefault": false,
+        "Icon": "input-keyboard",
+        "Id": "org.kaan.qftoggle",
+        "License": "MIT",
+        "Name": "Q/F Değiştirici",
+        "Version": "1.1"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0",
+    "X-Plasma-MainScript": "ui/main.qml"
+}

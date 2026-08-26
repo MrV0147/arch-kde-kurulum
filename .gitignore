@@ -1,0 +1,14 @@
+# Yedekler — KULLANICININ GERCEK config'lerinin kopyalari.
+# Bunlar asla depoya girmez: kglobalshortcutsrc, kxkbrc, .bashrc kopyalari.
+yedek/
+
+# Kurulum sirasinda uretilen, makineye ozel ciktilar
+**/kesfedilen-aksiyonlar.json
+**/kisayollar.json
+*.oncesi-*
+*.backup
+
+# Editor / sistem
+*.swp
+*~
+.DS_Store

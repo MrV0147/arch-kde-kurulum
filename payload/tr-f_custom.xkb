@@ -1,0 +1,84 @@
+// ---------------------------------------------------------------------------
+// Turkish F-letters / Q-symbols hybrid.
+// URETILDI: klavye/uret-f_custom.sh  (elle duzenleme, bir sonraki uretimde silinir)
+//
+//   seviye 1-2 -> tr(f)      : harf konumlari F klavye
+//   seviye 3-4 -> tr(basic)  : AltGr katmani Q klavyeyle BIREBIR ayni
+//   sembol/sayi tuslari      : include "tr(basic)" ile oldugu gibi
+//
+// Tek bilincli sapma: F'de <BKSL>'de duran 'x', burada <AB09>'a alindi; cunku
+// <BKSL> Q'da virgul/noktali virgul ve o sembol korunuyor. F'de <AB09> zaten
+// harf degil (nokta) oldugu icin cakisma yok. 32 harfin hepsi tam.
+// ---------------------------------------------------------------------------
+partial alphanumeric_keys
+xkb_symbols "f_custom" {
+
+    include "tr(basic)"
+
+    name[Group1]="Turkish (F letters, Q symbols)";
+
+    key <AB01> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              j,              J,  guillemotleft,           less ]};
+    key <AB02> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [     odiaeresis,     Odiaeresis, guillemotright,        greater ]};
+    key <AB03> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              v,              V,           cent,      copyright ]};
+    key <AB04> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              c,              C, doublelowquotemark, singlelowquotemark ]};
+    key <AB05> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [       ccedilla,       Ccedilla, leftdoublequotemark, leftsinglequotemark ]};
+    key <AB06> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              z,              Z, rightdoublequotemark, rightsinglequotemark ]};
+    key <AB07> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              s,              S,             mu,      masculine ]};
+    key <AB08> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              b,              B,       multiply,     VoidSymbol ]};
+    key <AB09> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              x,              X, periodcentered,       division ]};
+    key <AC01> { type[group1] = "FOUR_LEVEL_ALPHABETIC",
+                 [              u,              U,    acircumflex,    Acircumflex ]};
+    key <AC02> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              i,      Iabovedot,         ssharp,     VoidSymbol ]};
+    key <AC03> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              e,              E,     VoidSymbol,     VoidSymbol ]};
+    key <AC04> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              a,              A,    ordfeminine,     VoidSymbol ]};
+    key <AC05> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [     udiaeresis,     Udiaeresis,     VoidSymbol,     VoidSymbol ]};
+    key <AC06> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              t,              T,     VoidSymbol,     VoidSymbol ]};
+    key <AC07> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              k,              K,      dead_hook,      dead_horn ]};
+    key <AC08> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              m,              M,     VoidSymbol,     VoidSymbol ]};
+    key <AC09> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              l,              L,     VoidSymbol,     VoidSymbol ]};
+    key <AC10> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              y,              Y,          acute,     dead_acute ]};
+    key <AC11> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [       scedilla,       Scedilla,     apostrophe,     dead_caron ]};
+    key <AD01> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              f,              F,             at,    Greek_OMEGA ]};
+    key <AD02> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              g,              G,     VoidSymbol,     VoidSymbol ]};
+    key <AD03> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [         gbreve,         Gbreve,       EuroSign,     VoidSymbol ]};
+    key <AD04> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [       idotless,              I,      paragraph,     registered ]};
+    key <AD05> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              o,              O,          U20BA,     VoidSymbol ]};
+    key <AD06> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              d,              D,      leftarrow,            yen ]};
+    key <AD07> { type[group1] = "FOUR_LEVEL_ALPHABETIC",
+                 [              r,              R,    ucircumflex,    Ucircumflex ]};
+    key <AD08> { type[group1] = "FOUR_LEVEL_ALPHABETIC",
+                 [              n,              N,    icircumflex,    Icircumflex ]};
+    key <AD09> { type[group1] = "FOUR_LEVEL_ALPHABETIC",
+                 [              h,              H,    ocircumflex,    Ocircumflex ]};
+    key <AD10> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              p,              P,     VoidSymbol,     VoidSymbol ]};
+    key <AD11> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              q,              Q, dead_diaeresis, dead_abovering ]};
+    key <AD12> { type[group1] = "FOUR_LEVEL_SEMIALPHABETIC",
+                 [              w,              W,     asciitilde,    dead_macron ]};
+};

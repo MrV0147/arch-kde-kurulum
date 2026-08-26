@@ -1,0 +1,204 @@
+# Türkçe F/Q Hibrit Klavye + KDE Masaüstü Kurulumu
+
+Arch Linux + KDE Plasma 6 (Wayland) için, **ölçülerek doğrulanmış** bir masaüstü
+kurulumu. Ana parçası şu: *F klavyenin harf konumlarında yaz, ama tüm sembolleri
+Q klavyedeki yerinde tut.*
+
+```
+Üst  sıra:  f  g  ğ  ı  o  d  r  n  h  p  q  w      ← F klavye harfleri
+Sayı sırası: "  1  2  3  4  5  6  7  8  9  0  *  -   ← Q klavye, dokunulmadı
+AltGr + Q tuşu = @                                   ← Q klavye, dokunulmadı
+```
+
+Yanında: VS Code tarzı terminal kısayolları, tek tıkla düzen değiştiren panel
+widget'ı ve TTY'den çalışan tam geri alma.
+
+---
+
+## Neden
+
+Türkçe F klavye ile daha hızlı yazılır, ama F'nin sembol yerleşimi Q'dan farklı.
+Yıllardır Q kullanan biri için asıl kas hafızası **sembollerde**: `@`, `€`,
+noktalama, parantezler. Bu proje ikisini ayırıyor — harfler F'den, semboller
+Q'dan.
+
+Bunu yapmanın "temiz" yolu var: XKB'de `include "tr(basic)"` ile Q'nun her şeyini
+miras al, sonra **sadece 32 harf tuşunun 1. ve 2. seviyesini** F'ye çevir.
+3. ve 4. seviye (AltGr katmanı) fiziksel tuşta Q'da neyse o kalır.
+
+Ölçüldü: `f_custom` varyantının AltGr katmanı `tr` ile **bire bir aynı** —
+32 harf tuşunda 0 fark, 453 sembol/diğer tuşta 0 fark.
+
+---
+
+## Kurulum
+
+```bash
+git clone https://github.com/MrV0147/arch-kde-kurulum.git ~/klavye
+cd ~/klavye
+bash kur.sh
+```
+
+`kur.sh` seni sırayla yürütür ve `sudo` gereken yerde **durur, komutu verir** —
+kendisi `sudo` çalıştırmaz.
+
+Durumu her an görmek için:
+
+```bash
+bash durum.sh        # ne kurulu, ne aktif — dosyadan değil sistemden okur
+bash test-f_custom.sh  # klavye gerçekten doğru mu (7 ölçüm)
+```
+
+Her şeyi geri almak — masaüstü hiç açılmasa bile, TTY'den (`Ctrl+Alt+F3`):
+
+```bash
+sudo bash ~/klavye/02-rollback.sh --force
+```
+
+---
+
+## Ne yapıyor
+
+### 1 — Yedek ve geri alma
+
+Dokunulan her dosyanın zaman damgalı yedeği + `.backup` kopyası (var olanı
+ezmez). `02-rollback.sh` TTY'den tek komutla her şeyi geri alır, kullanıcı
+dosyalarının sahipliğini `chown` ile düzeltir.
+
+Ayrıca **giriş ekranını Q'ya sabitler** (`localectl set-x11-keymap tr`). Sebep:
+SDDM oturumdaki düzenden bağımsızdır; sabitlemezsen parola ekranında hangi
+düzende olduğun belirsiz kalır.
+
+### 2 — `tr(f_custom)` klavye varyantı
+
+`uret-f_custom.sh`, XKB bloğunu **elle yazmaz** — `xkbcli compile-keymap`
+çıktısından üretir:
+
+```
+seviye 1-2  ←  tr(f)      (F klavye harf konumları)
+seviye 3-4  ←  tr(basic)  (Q klavye AltGr katmanı)
+```
+
+Böylece kaynak dosyada *görünmeyen* miras seviyeler de doğru yakalanır. Örnek:
+`tr(basic)` içinde `<AD11>` yalnızca `{[gbreve, Gbreve]}` yazar, ama derlenmiş
+keymap'te 3. ve 4. seviye `latin`'den mirasla doludur.
+
+`03-xkb-kur.sh` idempotenttir ve **hiçbir şeyi yazmadan önce** değişikliği
+`/tmp`'deki sanal bir XKB kökünde dener:
+
+```
+xmllint --noout evdev.xml
+xkbcli compile-keymap --layout tr --variant f_custom
+xkbcli compile-keymap --layout tr            # Q hâlâ bozulmadı mı
+```
+
+Üçü de geçmeden gerçek dosyaya dokunulmaz. Bir pacman hook'u,
+`xkeyboard-config` her güncellendiğinde varyantı yeniden enjekte eder — yoksa
+ilk güncellemede sessizce kaybolurdu.
+
+**`x` harfi nerede:** Gerçek F klavyede `x`, virgül tuşundadır (`<BKSL>`). Ama o
+tuş burada Q'nun virgül/noktalı virgülü olarak kalıyor. F'de `ç` harfi `<AB05>`'e
+taşındığı için Q'nun `ç` tuşu (`<AB09>`) boşalıyor; `x` oraya yerleşiyor.
+32 harfin hepsi tam, hiçbir Q sembolü kaybolmuyor.
+
+### 3 — Konsole kısayolları (VS Code tarzı)
+
+`Ctrl+C` kopyala, `Ctrl+V` yapıştır, `Ctrl+F` bul, `Ctrl+T`/`Ctrl+W` sekme.
+
+**SIGINT'e ne oluyor:** Konsole'un `Kopyala` aksiyonu seçim yokken pasiftir;
+pasif aksiyon tuşu yutmaz, `Ctrl+C` terminale geçer. Yani normal kullanımda
+`Ctrl+C` eskisi gibi işlemi durdurur. Metin seçiliyken de durdurmak istersen
+`Ctrl+Shift+C` için isteğe bağlı bir keytab katmanı var.
+
+> `stty intr` ile `Ctrl+Shift+C` **atanamaz.** Terminal her ikisi için de aynı
+> baytı (`0x03`) gönderir; Shift bilgisi kontrol karakteri protokolünde yoktur.
+> Bu yüzden `~/.bashrc` ve `stty` hiç değiştirilmiyor — SSH, tmux, vim standart
+> kalıyor.
+
+`Ctrl+X` ve `Ctrl+Z` **kasten** boş bırakıldı: Konsole'da Kes aksiyonu yok
+(terminal çıktısı düzenlenebilir değil), yani `Ctrl+X` terminale geçer ve
+nano'dan çıkış çalışmaya devam eder. `Ctrl+Z` de SIGTSTP olarak kalır.
+
+Konsole 26.08 `konsoleui.rc`'yi diske koymadığı için aksiyon adları **tahmin
+edilmiyor**: Konsole'a şemayı bir kez kendisine yazdırıyorsun, script sonra
+o dosyadaki gerçek adları **mevcut varsayılan kısayollarından tanıyıp** düzenliyor.
+
+### 4 — Q/F panel widget'ı
+
+```
+Sol tık   → düzeni değiştir
+Sağ tık   → kısayol listesi (yardım paneli)
+Tekerlek  → düzenler arasında gez
+```
+
+Kompakt, yuvarlak, bayraksız — sadece yüksek kontrastlı bir **Q** ya da **F**.
+F'de dolu kapsül, Q'da sadece kenarlık: düzeni metin okumadan da ayırt edersin.
+
+Alt süreç yok: `org.kde.plasma.workspace.keyboardlayout` QML modülü doğrudan
+kullanılıyor, `layoutChanged` sinyali harfi anında güncelliyor. Poll yok,
+`qdbus` çağrısı yok.
+
+Sağ tık panelinin içeriği QML'e gömülü değil — `uret-yardim.sh` onu **canlı
+sistemden** üretir. Bir kısayolu değiştirdiğinde panel yalan söylemez.
+
+### 5 — Masaüstü (`masaustu/`)
+
+```bash
+bash masaustu/10-kwin.sh --goster        # ne değişecek, yazmadan gör
+bash masaustu/20-ek-bilesenler.sh --liste
+```
+
+Köşe eylemleri, efektler, `Alt+Tab` görünümü, pencere davranışları.
+Üçüncü parti tema/plasmoid'ler **depoya kopyalanmadı** — hepsinin kendi lisansı
+var, `20-ek-bilesenler.sh` kaynaklarını listeliyor.
+
+---
+
+## Dosyalar
+
+| Dosya | Ne yapar |
+|---|---|
+| `kur.sh` | Sıralı kurulum rehberi |
+| `durum.sh` | Canlı durum raporu |
+| `KISAYOLLAR.md` | Tam kısayol referansı — ne kaybettin, yerine ne kullanacaksın |
+| `01-yedekle.sh` | Yedek + giriş ekranını Q'ya sabitle |
+| `02-rollback.sh` | Her şeyi geri al (TTY'den çalışır) |
+| `uret-f_custom.sh` | XKB bloğunu derlenmiş keymap'ten üret |
+| `03-xkb-kur.sh` | Varyantı enjekte et + pacman hook |
+| `test-f_custom.sh` | 7 ölçüm — harf, AltGr, sembol denetimi |
+| `04-konsole-kisayol.sh` | Konsole kısayol şeması |
+| `05-panel-widget.sh` | İki düzen kaydı + widget kurulumu |
+| `06-global-kisayol.sh` | `Ctrl+Shift+Esc` vb. |
+| `uret-yardim.sh` | Widget yardım panelinin içeriği |
+| `masaustu/` | KWin ayarları, üçüncü parti bileşen listesi |
+
+---
+
+## Gereksinimler
+
+Arch Linux + KDE Plasma 6, Wayland. Kullanılan araçlar:
+
+```
+xkeyboard-config  libxkbcommon (xkbcli)  libxml2 (xmllint)
+konsole  plasma-desktop  plasma-workspace  qt6-tools (qdbus6)  systemd (busctl)
+python  (üretici ve test scriptleri için)
+```
+
+Hepsi standart bir Plasma kurulumunda zaten var.
+
+---
+
+## Windows'ta çalışır mı?
+
+Hayır — XKB, Konsole ve plasmoid'lerin hiçbiri Windows'ta yok. Ama 4 fazın
+ikisi Windows'ta zaten hazır geliyor: Windows Terminal'de `Ctrl+C` zaten
+"seçim varsa kopyala, yoksa SIGINT" davranışında ve `Ctrl+Shift+Esc` zaten
+Görev Yöneticisi'ni açıyor. Asıl iş klavye düzeni: **MSKLC** ile aynı mantık
+(harfler F'den, AltGr katmanı Q'dan) `.dll` olarak üretilebilir.
+
+---
+
+## Lisans
+
+MIT — `LICENSE`. Üçüncü parti tema ve plasmoid'ler kendi lisanslarına tabidir
+ve bu depoda **yer almaz**, yalnızca kaynakları listelenir.
