@@ -49,6 +49,31 @@ bicimle() {
 
 onaltilik() { printf '%s' "$1" | od -An -tx1 | tr -s ' ' | sed 's/^ //'; }
 
+# ---------------------------------------------------------------- dedektor
+# --dedektor: hangi tusa basarsan bas, gonderdigi baytlari yazar. Belirli bir
+# tus listesi sormaz. "Bu tus ne gonderiyor?" sorusunun dogrudan yaniti.
+if [[ "${1:-}" == "--dedektor" ]]; then
+  cat <<'DEOF'
+TUS DEDEKTORU
+
+Herhangi bir tusa bas, ne gonderdigini yazayim.
+Cikmak icin:  q  tusuna bas.
+
+Ozellikle merak ettiklerim:
+  Ctrl+A     -> bash'e ULASIYOR mu, yoksa Konsole mu yutuyor?
+  Delete     -> hangi diziyi gonderiyor?
+  Backspace  -> hangi bayti gonderiyor?
+
+DEOF
+  while true; do
+    printf '  bas: '
+    ham="$(oku_tus)"
+    [[ "$ham" == "q" ]] && { echo "cikildi"; break; }
+    printf '%-20s  onaltilik: %s\n' "$(bicimle "$ham")" "$(onaltilik "$ham")"
+  done
+  exit 0
+fi
+
 cat <<'EOF'
 TUS OLCUMU
 

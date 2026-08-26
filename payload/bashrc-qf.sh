@@ -99,7 +99,12 @@ bind '"\C-u": kill-whole-line' 2>/dev/null
 # yani bu kodlama bu terminalde gecerli. Kullanilmayan bir diziyi baglamak
 # zararsiz oldugu icin bunlari dogrudan bagliyoruz - kullaniciyi olcum
 # adimina mecbur birakmiyoruz.
-bind -x '"\e[3~":   _qf_delete'      2>/dev/null   # Delete  (akilli)
+# Akilli Delete sorun cikarirsa tek dosyayla kapatilabilir:
+#   touch ~/.local/state/qf-akilli-delete-kapali
+# Boylece Delete tamamen normal davranisa doner.
+if [[ ! -e "${XDG_STATE_HOME:-$HOME/.local/state}/qf-akilli-delete-kapali" ]]; then
+    bind -x '"\e[3~":   _qf_delete'  2>/dev/null   # Delete  (akilli)
+fi
 bind -x '"\e[3;3~": _qf_geri_al'    2>/dev/null   # Alt+Delete (geri getir)
 bind -x '"\e[3;2~": _qf_satir_sil'  2>/dev/null   # Shift+Delete
 bind -x '"\e[3;6~": _qf_secili_sil' 2>/dev/null   # Ctrl+Shift+Delete
