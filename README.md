@@ -57,6 +57,9 @@ bash kur.sh
 | 9 | `bash test-konsole.sh` — 11 otomatik + yönlendirmeli ölçüm | otomatik |
 | 10 | `bash 06-global-kisayol.sh` — `Ctrl+Shift+Esc` | otomatik |
 | 11 | Oturumu kapat/aç — global kısayol etkin olsun | **sen** |
+| 11a | `bash yenile-keymap.sh` — KWin keymap'i tazele | otomatik (03 çağırır) |
+| 11b | `bash test-klavye-ctrl.sh` — F düzeninde Ctrl konumları | **sen** (canlı tuş) |
+| 11c | `bash olc-tus.sh` → `bash 07-satir-sil.sh` — satır düzenleme | **sen** (tuş ölçümü) |
 | 12 | `masaustu/` scriptleri — **isteğe bağlı**, görünümü değiştirir | **sen**, `--goster` ile bakarak |
 
 **6. adım neden elle:** Konsole 26.08 menü tanımını Qt kaynağına gömüyor; aksiyon
@@ -250,6 +253,12 @@ tek tek `masaustu/ENVANTER.md` sonundaki tabloda.
 | `03-xkb-kur.sh` | Varyantı enjekte et + pacman hook |
 | `test-f_custom.sh` | 7 ölçüm — harf, AltGr, sembol denetimi |
 | `test-konsole.sh` | Konsole kısayolları: 11 otomatik + yönlendirmeli ölçüm |
+| `yenile-keymap.sh` | **KWin'e keymap'i yeniden derletir** — oturum kapatmadan |
+| `test-klavye-ctrl.sh` | F düzeninde Ctrl konumları: 4 otomatik + canlı tuş ölçümü |
+| `olc-tus.sh` | Bir tuşun gönderdiği baytları ölçer (tahmin yerine) |
+| `07-satir-sil.sh` | Satır düzenleme kısayollarını kurar (`.bashrc` + `bind -x`) |
+| `test-satir-sil.sh` | Satır silme: 6 ölçüm, ikisi tuşa basmadan |
+| `payload/bashrc-qf.sh` | `_qf_satir_sil` / `_qf_secili_sil` + tuş bağlamaları |
 | `04-konsole-kisayol.sh` | Konsole kısayol şeması |
 | `05-panel-widget.sh` | İki düzen kaydı + widget kurulumu |
 | `06-global-kisayol.sh` | `Ctrl+Shift+Esc` vb. |

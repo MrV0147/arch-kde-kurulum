@@ -65,6 +65,24 @@ else
   uyar "$KB icin kayit yok - elle kontrol et"
 fi
 
+echo "== 3.5/6  Satir duzenleme (.bashrc blogu) =="
+# .bashrc'ye TEK SATIR source eklenmisti; sentinel'li blogu sokuyoruz.
+if [[ -f "$EV/.bashrc" ]] && grep -q "qf-klavye satir duzenleme" "$EV/.bashrc"; then
+  /usr/bin/python3 - "$EV/.bashrc" <<'PYEOF'
+import pathlib, re, sys
+p = pathlib.Path(sys.argv[1]); m = p.read_text(encoding='utf-8')
+y = re.sub(r'# >>> qf-klavye satir duzenleme.*?# <<< qf-klavye BITIS <<<\n?', '', m, flags=re.S)
+p.write_text(y.rstrip('\n') + '\n', encoding='utf-8')
+PYEOF
+  chown "$GERCEK_KULLANICI:$GERCEK_KULLANICI" "$EV/.bashrc"
+  echo "  [ok] .bashrc blogu silindi"
+else
+  echo "  [.] .bashrc'de blok yok"
+fi
+rm -rf "$EV/.local/share/qf-klavye" && echo "  [ok] qf-klavye kod dizini"
+rm -f  "$EV/.local/state/qf-tuslar.conf" "$EV/.local/state/qf-keymap-yenilendi" \
+       && echo "  [ok] olculmus tuslar / keymap damgasi"
+
 echo "== 4/6  Konsole ozellestirmeleri =="
 rm -rf  "$EV/.local/share/kxmlgui5/konsole"        && echo "  [ok] kxmlgui5/konsole"
 rm -f   "$EV/.local/share/konsole/VSCode.keytab"   && echo "  [ok] VSCode.keytab"

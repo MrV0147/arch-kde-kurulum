@@ -113,6 +113,19 @@ if not glob:
                       'bash ~/klavye/06-global-kisayol.sh'))
 bolumler.append({'baslik': 'Global (KDE)', 'satirlar': glob})
 
+# ---------------------------------------------------- 4.5) satir duzenleme
+sat = []
+if pathlib.Path(EV, '.local/share/qf-klavye/bashrc-qf.sh').exists():
+    sat = [
+        satir('Ctrl+U', 'Yazdigin satirin TAMAMINI sil'),
+        satir('Ctrl+Shift+Del', 'Panodakini satirdan cikar', 'once Ctrl+C ile kopyala'),
+        satir('Ctrl+Backspace', 'Onceki kelimeyi sil'),
+        satir('Yukari / Asagi', 'Yazdiginin basina uyan komutlari ara'),
+    ]
+else:
+    sat = [satir('—', 'Satir duzenleme kurulmadi', 'bash ~/klavye/07-satir-sil.sh')]
+bolumler.append({'baslik': 'Satır düzenleme', 'satirlar': sat})
+
 # ------------------------------------------------------ 5) dokunulmayanlar
 bolumler.append({'baslik': 'Kasten dokunulmadı', 'satirlar': [
     satir('Ctrl+Z', 'İşlemi uyutur (SIGTSTP) — "geri al" DEĞİL', 'geri getir: fg'),

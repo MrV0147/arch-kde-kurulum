@@ -34,6 +34,7 @@ KULLANICI_DOSYALARI=(
   "$EV/.config/konsolerc"
   "$EV/.config/kglobalshortcutsrc"
   "$EV/.bashrc"
+  "$EV/.inputrc"
 )
 
 mkdir -p "$YEDEK"

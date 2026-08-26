@@ -189,6 +189,42 @@ olmadığı için zaten hiçbir düzende taşınmıyor, ikinci bir güvence.
 
 ---
 
+## ②-B Satır düzenleme — yazdığını tek hamlede silmek
+
+Terminalde `Ctrl+A` ile "hepsini seç, sonra sil" doğrudan çalışmaz: Konsole'un
+seçimi **kaydırma tamponunun görsel seçimi**, düzenlenebilir bir metin değil.
+Ama yazdığın komut satırı readline'ın tamponunda durur ve bash `bind -x` ile o
+tampona erişim verir (`READLINE_LINE` / `READLINE_POINT`). İstediğin şey tam
+olarak bunun üzerinden yapıldı.
+
+| Tuş | Ne yapar | Nerede tanımlı |
+|---|---|---|
+| `Ctrl+U` | **Yazdığın satırın tamamını sil** — imleç nerede olursa olsun | `bashrc-qf.sh` → `kill-whole-line` |
+| `Shift+Delete` | Aynısı (ölçülen tuşa göre bağlanır) | `_qf_satir_sil` |
+| `Ctrl+Shift+Delete` | **Panodaki metni satırdan çıkar** — yoksa satırın tamamını sil | `_qf_secili_sil` |
+| `Ctrl+Backspace` | Önceki kelimeyi sil | `backward-kill-word` |
+| `Ctrl+Delete` | Sonraki kelimeyi sil | `kill-word` |
+| `↑` / `↓` | Yazdığının **başına uyan** komutları geçmişte ara | `history-search-backward/forward` |
+
+**"Seç → sil" akışı:** bir parçayı fareyle seç → `Ctrl+C` (kopyala) →
+`Ctrl+Shift+Delete`. Panodaki metin satırda geçiyorsa **yalnızca o parça**
+silinir; geçmiyorsa satırın tamamı gider.
+
+> **`Ctrl+U` neden panoya bakmıyor:** `Ctrl+A` tek başına panoya kopyalamaz.
+> Varsayılan tuş panoyu okusaydı, ekrandaki seçimle ilgisi olmayan **eski** bir
+> pano içeriğini satırdan silebilirdi. Sessiz yanlış silme, silmemekten kötüdür.
+> Panoya dayalı davranış ayrı bir tuşta, isteyerek çağrılıyor.
+
+**Tuş dizileri tahmin edilmiyor:** `olc-tus.sh` gerçek terminalde tuşa bastırıp
+gelen baytları ölçer ve `~/.local/state/qf-tuslar.conf`'a yazar; `bashrc-qf.sh`
+onu okuyup bağlar. Ölçülmemiş bir tuş **bağlanmaz** — uydurma dizi yazılmaz.
+
+**Doğrulama:** `bash ~/klavye/test-satir-sil.sh` — 6 ölçüm, ikisi fonksiyonları
+alt kabukta çağırıp `READLINE_LINE`'ın gerçekten değiştiğini **tuşa basmadan**
+ölçer.
+
+---
+
 ## ③ Global (KDE) kısayolları
 
 | Tuş | Ne yapar | Nerede tanımlı | Not |
@@ -222,7 +258,8 @@ Bunlar "unutulmadı", bilerek bırakıldı.
 |---|---|
 | **`Ctrl+Z`** | Geri Al'a bağlanmadı. Bağlansaydı **SIGTSTP** (işlemi uyutma) kaybolurdu — `fg`/`bg` iş akışının can damarı. Terminalde "geri al" diye bir kavram zaten yok; komut satırında yanlış yazdıysan **`Ctrl+_`** (readline undo) var. |
 | **`Ctrl+X`** | Konsole'da **Kes (Cut) aksiyonu yok** — terminal çıktısı düzenlenebilir bir tampon değil, kesilecek bir şey yok. Bağlanacak aksiyon olmadığı için tuş boşta kaldı. **Sonuç iyi: nano'dan `Ctrl+X` ile çıkmaya devam ediyorsun**, bash'te de `C-x` öneki (`C-x C-e` = komutu editörde aç) çalışıyor. |
-| **`~/.bashrc`, `stty`** | Hiç değiştirilmedi. `stty intr` hâlâ `^C`. Böylece SSH, tmux, `vim`, `htop` — hepsi standart davranıyor. |
+| **`stty`** | Hiç değiştirilmedi. `stty intr` hâlâ `^C`. Böylece SSH, tmux, `vim`, `htop` — hepsi standart davranıyor. |
+| **`~/.bashrc`** | ⚠️ **Artık dokunuluyor** — tek satırlık bir `source`. `bind -x` bir bash builtin'i olduğu için `.inputrc`'ye yazılamıyor ve `READLINE_LINE`'a erişimin başka yolu yok. Asıl kod ayrı dosyada (`~/.local/share/qf-klavye/`), `.bashrc`'de yalnızca iki satırlık sentinel'li blok var. Geri alma tek satırı siler. |
 | **`/etc/X11/xorg.conf.d/00-keyboard.conf`** | İçine `f_custom` **yazılmadı**, kasten. Bu dosya **giriş ekranını (SDDM)** belirler. Düz `tr` (Q) olarak sabitlendi ki bilgisayarı açarken parolanı hangi düzende yazacağın belirsiz kalmasın. |
 | **`Meta+V`, `Meta+L`, `Meta+D`** | Zaten atanmıştı, üzerine yazılmadı. |
 | **Panel yapılandırması** | `plasma-org.kde.plasma.desktop-appletsrc` **elle düzenlenmedi** — plasmashell çalışırken üzerine yazıyor ve değişiklik kaybolurdu. Widget panele, Plasma'nın kendi betik API'siyle eklendi (`org.kde.PlasmaShell.evaluateScript` → `panel.addWidget`). Kaldırmak için: panele sağ tık → Bileşenleri Düzenle → widget'ın üzerinde çarpı. |

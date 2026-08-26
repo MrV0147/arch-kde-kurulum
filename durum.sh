@@ -28,6 +28,20 @@ y "keymap derleniyor" \
 y "tr (Q) hala derleniyor" \
   "$(xkbcli compile-keymap --layout tr >/dev/null 2>&1 && echo EVET || echo HAYIR)"
 y "pacman hook" "$(var /etc/pacman.d/hooks/95-xkb-f_custom.hook)"
+# Keymap tazeligi: KWin keymap'i oturum acilisinda derliyor. XKB dosyalari son
+# yenilemeden SONRA degistiyse KWin hala eski kopyayi kullaniyor demektir.
+DMG="${XDG_STATE_HOME:-$HOME/.local/state}/qf-keymap-yenilendi"
+if [[ -f "$DMG" ]]; then
+  _d=$(stat -c %Y "$DMG"); _bayat=""
+  for _f in $XKB/symbols/tr $XKB/types/complete; do
+    [[ -f "$_f" ]] && (( $(stat -c %Y "$_f") > _d )) && _bayat="$_bayat $(basename "$_f")"
+  done
+  [[ -z "$_bayat" ]] \
+    && y "KWin keymap tazeligi" "TAZE ($(date -d @$_d '+%d.%m %H:%M'))" \
+    || y "KWin keymap tazeligi" "BAYAT ->$_bayat  (yenile-keymap.sh)"
+else
+  y "KWin keymap tazeligi" "hic yenilenmemis (yenile-keymap.sh)"
+fi
 y ".backup yedekleri" \
   "$(ls $XKB/symbols/tr.backup $XKB/rules/evdev.xml.backup >/dev/null 2>&1 && echo VAR || echo EKSIK)"
 
@@ -84,6 +98,18 @@ y "keytab (SIGINT katman 2)" "$(var "$HOME/.local/share/konsole/VSCode.keytab")"
 y "stty intr (bu terminalde)" "$(stty -a 2>/dev/null | tr ';' '\n' | sed -n 's/.*intr = //p' | head -1 || echo '(tty yok)')"
 y "Ctrl+X / Ctrl+Z" "atanmadi - terminale geciyor (kasten)"
 y "klipper SyncClipboards" "$(kreadconfig6 --file klipperrc --group General --key SyncClipboards)"
+
+baslik "SATIR DUZENLEME (bash)"
+y ".bashrc blogu" "$(grep -q 'qf-klavye satir duzenleme' "$HOME/.bashrc" 2>/dev/null && echo VAR || echo yok)"
+y "kod dosyasi" "$(var "$HOME/.local/share/qf-klavye/bashrc-qf.sh")"
+_TS="${XDG_STATE_HOME:-$HOME/.local/state}/qf-tuslar.conf"
+if [[ -r "$_TS" ]]; then
+  y "olculmus tuslar" "$(wc -l < "$_TS") adet"
+  sed 's/^/    /' "$_TS"
+else
+  y "olculmus tuslar" "yok - bash ~/klavye/olc-tus.sh"
+fi
+y "Ctrl+U" "satirin tamamini siler (kill-whole-line)"
 
 baslik "GLOBAL KISAYOLLAR"
 if [[ -f "$HOME/.config/kglobalshortcutsrc" ]]; then

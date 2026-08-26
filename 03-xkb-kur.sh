@@ -201,6 +201,20 @@ for f in symbols/tr rules/evdev.xml rules/evdev.lst types/complete; do
 done
 log ""
 log "kuruldu -> $XKB_KOK"
+
+# KWin keymap'i oturum acilisinda BIR KEZ derliyor. Dosyalari degistirmek
+# YETMIYOR - bir tur tam bu yuzden "kod dogru ama calismiyor" sanildi.
+# Kurulumdan sonra yeniden derletiyoruz.
+if [[ "$XKB_KOK" == "/usr/share/X11/xkb" && -n "${SUDO_USER:-}" ]]; then
+  log ""
+  log "KWin keymap'i yenileniyor (kullanici oturumunda)..."
+  sudo -u "$SUDO_USER" \
+    XDG_RUNTIME_DIR="/run/user/$(id -u "$SUDO_USER")" \
+    WAYLAND_DISPLAY="${WAYLAND_DISPLAY:-wayland-0}" \
+    bash "$KOK_DIZIN/yenile-keymap.sh" --sessiz 2>/dev/null \
+    && log "  [ok] yenilendi" \
+    || log "  [!] yenilenemedi - elle: bash $KOK_DIZIN/yenile-keymap.sh"
+fi
 [[ $KALDIR -eq 1 ]] && log "(f_custom kaldirildi)" || true
 
 # ------------------------------------------------------------- pacman hook
