@@ -50,27 +50,41 @@ bicimle() {
 onaltilik() { printf '%s' "$1" | od -An -tx1 | tr -s ' ' | sed 's/^ //'; }
 
 # ---------------------------------------------------------------- dedektor
-# --dedektor: hangi tusa basarsan bas, gonderdigi baytlari yazar. Belirli bir
-# tus listesi sormaz. "Bu tus ne gonderiyor?" sorusunun dogrudan yaniti.
+# --dedektor: tuslari TEK TEK, ADIYLA sorar ve ne gonderdiklerini yazar.
+#
+# Ilk surum serbest kipti ve okunmaz cikti verdi: kullanicinin panosunda
+# TUM KAYDIRMA TAMPONU vardi (Ctrl+A ile secip Ctrl+C ile kopyalamis) ve bir
+# yapistirma olunca binlerce bayt girdi olarak dokuldu. Bu surum uzun girdiyi
+# YAPISTIRMA olarak tanir, kirpar ve ne oldugunu soyler.
 if [[ "${1:-}" == "--dedektor" ]]; then
-  cat <<'DEOF'
-TUS DEDEKTORU
-
-Herhangi bir tusa bas, ne gonderdigini yazayim.
-Cikmak icin:  q  tusuna bas.
-
-Ozellikle merak ettiklerim:
-  Ctrl+A     -> bash'e ULASIYOR mu, yoksa Konsole mu yutuyor?
-  Delete     -> hangi diziyi gonderiyor?
-  Backspace  -> hangi bayti gonderiyor?
-
-DEOF
-  while true; do
-    printf '  bas: '
+  [[ -t 0 ]] || { echo "HATA: gercek terminalde calistir."; exit 1; }
+  SORULACAK=(
+    "Ctrl+A|bash'e ulasiyor mu, yoksa Konsole mu yutuyor"
+    "Delete|hangi diziyi gonderiyor"
+    "Backspace|hangi bayti gonderiyor"
+    "Shift+Delete|ayirt edilebiliyor mu"
+  )
+  echo "TUS DEDEKTORU — her tusa BIR KEZ bas"
+  echo
+  for s in "${SORULACAK[@]}"; do
+    IFS='|' read -r ad aciklama <<< "$s"
+    printf '  %-14s (%s)\n' "$ad" "$aciklama"
+    printf '      bas: '
     ham="$(oku_tus)"
-    [[ "$ham" == "q" ]] && { echo "cikildi"; break; }
-    printf '%-20s  onaltilik: %s\n' "$(bicimle "$ham")" "$(onaltilik "$ham")"
+    uz=${#ham}
+    if (( uz > 12 )); then
+      printf 'YAPISTIRMA! %d bayt geldi\n' "$uz"
+      printf '      ilk 40 karakter: %.40s...\n' "$ham"
+      printf '      -> Bu tus yapistirma yapti. Panonda buyuk bir metin var\n'
+      printf '         (muhtemelen Ctrl+A + Ctrl+C ile aldigin tum tampon).\n'
+    elif [[ -z "$ham" ]]; then
+      printf '(hicbir bayt gelmedi -> Konsole tusu YUTUYOR)\n'
+    else
+      printf '%-18s  onaltilik: %s\n' "$(bicimle "$ham")" "$(onaltilik "$ham")"
+    fi
+    echo
   done
+  echo "Bitti. Ciktiyi oldugu gibi paylas."
   exit 0
 fi
 
