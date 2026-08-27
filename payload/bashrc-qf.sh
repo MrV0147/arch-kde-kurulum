@@ -106,7 +106,15 @@ if [[ ! -e "${XDG_STATE_HOME:-$HOME/.local/state}/qf-akilli-delete-kapali" ]]; t
     bind -x '"\e[3~":   _qf_delete'  2>/dev/null   # Delete  (akilli)
 fi
 bind -x '"\e[3;3~": _qf_geri_al'    2>/dev/null   # Alt+Delete (geri getir)
-bind -x '"\e[3;2~": _qf_satir_sil'  2>/dev/null   # Shift+Delete
+# OLCULDU (olc-tus.sh --dedektor, bu makinede):
+#     Delete        -> \e[3~   (1b 5b 33 7e)   <- baglanabiliyor
+#     Backspace     -> 7f
+#     Shift+Delete  -> 7f       <- Backspace'ten AYIRT EDILEMIYOR
+# Konsole Delete tusuna Shift degistiricisini kodlamiyor. Yani \e[3;2~ bu
+# terminalde HIC GELMIYOR; asagidaki iki baglama olu. Yine de zararsizlar ve
+# baska bir terminalde (Shift'i kodlayan) ise yarayabilirler. Belgede
+# "Shift+Delete" bir cozum olarak SUNULMUYOR - calisan yollar Delete ve Ctrl+U.
+bind -x '"\e[3;2~": _qf_satir_sil'  2>/dev/null   # Shift+Delete (bu terminalde gelmiyor)
 bind -x '"\e[3;6~": _qf_secili_sil' 2>/dev/null   # Ctrl+Shift+Delete
 
 # Ctrl+A ile satir silme - yalnizca 08-ctrl-a-sil.sh acmissa.

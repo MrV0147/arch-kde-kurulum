@@ -117,6 +117,11 @@ bolumler.append({'baslik': 'Global (KDE)', 'satirlar': glob})
 sat = []
 if pathlib.Path(EV, '.local/share/qf-klavye/bashrc-qf.sh').exists():
     sat = [
+        satir('Ctrl+A', 'Yazdigin satirin TAMAMINI sil')
+            if pathlib.Path(EV, '.local/state/qf-ctrl-a-sil').exists()
+            else satir('Ctrl+Shift+A', 'Konsole: tumunu sec'),
+        satir('Delete', 'Imlec satir sonundaysa satiri komple siler'),
+        satir('Alt+Delete', 'Yanlislikla sileni geri getir'),
         satir('Ctrl+U', 'Yazdigin satirin TAMAMINI sil'),
         satir('Ctrl+Shift+Del', 'Panodakini satirdan cikar', 'once Ctrl+C ile kopyala'),
         satir('Ctrl+Backspace', 'Onceki kelimeyi sil'),

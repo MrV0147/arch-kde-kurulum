@@ -200,9 +200,10 @@ olarak bunun üzerinden yapıldı.
 | Tuş | Ne yapar | Nerede tanımlı |
 |---|---|---|
 | `Ctrl+U` | **Yazdığın satırın tamamını sil** — imleç nerede olursa olsun | `kill-whole-line` |
+| **`Ctrl+A`** | **Yazdığın satırın tamamını siler** (tek tuş) | `_qf_satir_sil` |
 | **`Delete`** | İmleç satır sonundaysa **satırı komple siler**, değilse normal karakter silme | `_qf_delete` |
 | `Alt+Delete` | Yanlışlıkla silineni **geri getirir** | `_qf_geri_al` |
-| `Shift+Delete` | Satırı komple sil (imleç nerede olursa olsun) | `_qf_satir_sil` |
+| `Shift+Delete` | *(bu terminalde çalışmıyor — aşağıya bak)* | `_qf_satir_sil` |
 | `Ctrl+Shift+Delete` | **Panodaki metni satırdan çıkar** — yoksa satırın tamamını sil | `_qf_secili_sil` |
 | `Ctrl+Delete` | Sonraki kelimeyi sil | `kill-word` (readline varsayılanı) |
 | `↑` / `↓` | Yazdığının **başına uyan** komutları geçmişte ara | `history-search-backward/forward` |
@@ -223,22 +224,37 @@ Yani `Ctrl+A` → (istersen `Ctrl+C`) → `Delete` akışı çalışıyor ve **g
 düzenlemeden hiçbir şey kaybedilmiyor**. Yanlışlıkla silersen `Alt+Delete`
 geri getirir.
 
+> **`Shift+Delete` neden çalışmıyor — ölçüldü:** Konsole, `Delete` tuşuna
+> `Shift` değiştiricisini kodlamıyor. `olc-tus.sh --dedektor` ile ölçüldü:
+> `Delete` → `\e[3~`, ama `Shift+Delete` → `7f`, yani **`Backspace` ile aynı**.
+> Ayırt edilemediği için ona ayrı bir işlev verilemez. Çalışan yollar:
+> **`Delete`** (imleç satır sonundayken) ve **`Ctrl+U`**.
+
 > **`Backspace` neden aynı şeyi yapmıyor:** Onun boş yuvası satır *başında*,
 > ama `Ctrl+A`'dan sonra imleç *sonda* olur. Sonda `Backspace` normalde bir
 > karakter siler — oraya satır silme koyarsam günlük geri silme bozulur.
 > Ölçüldü: `\C-h` ve `\C-?` ikisi de `backward-delete-char`'a bağlı, boş
 > yuva yok. `Delete` bu işi tam olarak yapıyor.
 
-### İstersen `Ctrl+A` tek başına silsin
+### `Ctrl+A` → satırı sil  **(açık)**
 
 ```bash
-bash ~/klavye/08-ctrl-a-sil.sh          # aç
-bash ~/klavye/08-ctrl-a-sil.sh --kaldir # geri al
+bash ~/klavye/08-ctrl-a-sil.sh --kaldir   # geri almak istersen
 ```
 
-Açtığında `Ctrl+A` → **yazdığın satırın tamamını siler** (tek tuş), Konsole'un
-"tümünü seç"i `Ctrl+Shift+A`'ya taşınır. **Varsayılan değil**, çünkü `Ctrl+A`'nın
-seçme işlevini kaybetmek bir tercih meselesi.
+`Ctrl+A` → **yazdığın satırın tamamını siler**, tek tuşta.
+Konsole'un "tümünü seç"i `Ctrl+Shift+A`'ya taşındı — kaybolmadı, sadece
+parmağının altından çekildi.
+
+**Neden bu yola gerek duyuldu — ölçüldü.** Terminalde `Ctrl+A`'nın Konsole
+sürümü yazdığın satırı değil, **tüm kaydırma tamponunu** seçer. `olc-tus.sh
+--dedektor` ile bakıldığında `Ctrl+A` bash'e **tek bayt bile göndermiyor**;
+Konsole onu tamamen yutuyor. Yani "`Ctrl+A` ile seç, sonra sil" akışı
+terminalde kurulamaz — ilk adım zaten istediğin şeyi seçmiyor.
+
+Üstüne bir de tuzağı var: `Ctrl+A` + `Ctrl+C` panoya binlerce karakter
+(tüm tampon) koyar. Sonra herhangi bir yapıştırma o yığını terminale döker —
+"ekran 20 satır aşağı kaydı" dediğin şey buydu.
 
 `Ctrl+A` düzenden bağımsızdır: `QF_CTRL_ALPHABETIC` sayesinde F düzeninde de
 Q'nun `A` tuşunda kalır.
